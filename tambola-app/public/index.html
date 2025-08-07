@@ -280,6 +280,12 @@
             });
 
             // --- Local Ticket Logic (No changes needed here) ---
+            
+            /**
+             * Generates a new random ticket.
+             * This version includes a "circuit breaker" to prevent infinite loops
+             * that can cause the page to freeze.
+             */
             function generateNewTicket() {
                 const ticket = {
                     rows: 3,
@@ -288,6 +294,8 @@
                     marked: new Set()
                 };
                 let grid = Array(ticket.rows).fill(null).map(() => Array(ticket.cols).fill(null));
+                
+                // 1. Get 15 unique random numbers
                 const allPossibleNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
                 let numbersToPlace = [];
                 for (let i = 0; i < 15; i++) {
@@ -295,22 +303,39 @@
                     numbersToPlace.push(allPossibleNumbers.splice(randIndex, 1)[0]);
                 }
                 numbersToPlace.sort((a,b) => a-b);
+                
+                // 2. Try to place numbers on the grid
                 let placedCount = 0;
+                let loopBreaker = 0; // FIX: Add a circuit breaker
                 while(placedCount < 15){
+                    loopBreaker++; // Increment breaker
+                    if (loopBreaker > 5000) { // FIX: Check breaker to prevent freezing
+                        console.error("Ticket generation failed due to too many attempts. Retrying...");
+                        generateNewTicket(); // Recursive call to try again
+                        return; // Exit this failed function call
+                    }
+
                     const num = numbersToPlace[placedCount];
                     const col = Math.floor((num - 1) / 10);
                     const row = Math.floor(Math.random() * 3);
 
-                    if(grid[row][col] === null && grid[row].filter(n => n !== null).length < 5){
-                        let colCount = grid[0][col] !== null ? 1 : 0;
-                        colCount += grid[1][col] !== null ? 1 : 0;
-                        colCount += grid[2][col] !== null ? 1 : 0;
-                        if(colCount < 2){
+                    // Check if the row has space (max 5 numbers)
+                    if(grid[row].filter(n => n !== null).length < 5 && grid[row][col] === null){
+                        
+                        // Check if the column has space (max 3 numbers)
+                        let colCount = 0;
+                        for(let r=0; r<3; r++){
+                            if(grid[r][col] !== null) colCount++;
+                        }
+                        
+                        if(colCount < 3){
                            grid[row][col] = num;
                            placedCount++;
                         }
                     }
                 }
+                
+                // 3. Finalize ticket
                 ticket.numbers = grid;
                 playerTicket = ticket;
                 claimedWinnings.clear();

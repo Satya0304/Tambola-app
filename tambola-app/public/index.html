@@ -3,274 +3,441 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tambola - Housie Game (Multiplayer)</title>
+    <title>Tambola Game - Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- 1. Include the Socket.IO client library -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Montserrat:wght@700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Roboto', sans-serif;
+            background: #0f0c29;  /* fallback for old browsers */
+            background: -webkit-linear-gradient(to right, #24243e, #302b63, #0f0c29);  /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to right, #24243e, #302b63, #0f0c29); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+        }
+        .font-montserrat {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .font-courier {
+            font-family: 'Courier Prime', monospace;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .board-number {
             transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-weight: 700;
         }
         .board-number.called {
-            background-color: #10B981; /* Emerald-500 */
-            color: white;
-            transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        .current-number-display {
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15), 0 3px 6px rgba(0,0,0,0.1);
-        }
-        .ticket {
-            border: 2px solid #4A5568; /* Gray-600 */
-        }
-        .ticket-number {
-            border: 1px solid #374151; /* Gray-700 */
-        }
-        .ticket-number.marked {
             background-color: #FBBF24; /* Amber-400 */
-            color: #1f2937; /* Gray-800 */
-            text-decoration: line-through;
-            font-weight: bold;
+            color: #111827;
+            transform: scale(1.1);
+            border-radius: 50%;
         }
         .btn {
-            transition: all 0.2s ease;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
         .btn:hover {
-            transform: translateY(-2px);
-        }
-        .btn:active {
-            transform: translateY(0);
-        }
-        .modal-overlay {
-            transition: opacity 0.3s ease;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
         
-        /* Dark Mode Styles */
-        .dark body {
-            background-color: #111827; /* Gray-900 */
-            color: #d1d5db; /* Gray-300 */
+        /* --- Traditional Ticket Style --- */
+        .traditional-ticket {
+            background-color: #fefbec; /* A more authentic off-white paper color */
+            border: 1px solid #dcdcdc;
+            padding: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            color: #374151; /* Dark gray text for the ticket */
         }
-        .dark .bg-white {
-            background-color: #1f2937; /* Gray-800 */
+        .ticket-header {
+            font-family: 'Courier Prime', monospace;
+            font-size: 0.75rem;
+            color: #4b5563;
+            margin-bottom: 0.5rem;
+            text-align: center;
+            border-bottom: 1px dashed #9ca3af;
+            padding-bottom: 0.25rem;
         }
-        .dark .text-gray-800 {
-            color: #f9fafb; /* Gray-50 */
+        .ticket-number {
+            position: relative;
+            transition: all 0.3s ease;
+            color: #1f2937; /* Dark text color */
+            border: 1px solid #e5e7eb; /* Thin, ink-like lines */
+            font-weight: 700;
         }
-        .dark .text-gray-700 {
-            color: #d1d5db; /* Gray-300 */
+        .ticket-number.marked .dabber {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            height: 90%;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.7) 50%, rgba(239, 68, 68, 0.4) 100%);
+            border-radius: 50%;
+            z-index: 1;
         }
-        .dark .text-gray-600 {
-            color: #9ca3af; /* Gray-400 */
+        .ticket-number .number-text {
+            position: relative;
+            z-index: 2;
         }
-        .dark .text-gray-900 {
-             color: #f9fafb; /* Gray-50 */
+        .ticket-number.marked .number-text {
+            color: #fff; /* White text on top of dabber */
         }
-        .dark .board-number {
-            background-color: #374151; /* Gray-700 */
-            color: #d1d5db; /* Gray-300 */
+        .ticket-number.empty {
+             background-color: #f3f4f6; /* Light gray for empty cells */
         }
-        .dark .board-number.called {
-            background-color: #10B981; /* Emerald-500 */
-            color: white;
+        
+        /* --- Bingo Cage Animation --- */
+        #animation-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
         }
-        .dark .current-number-display {
-             background-color: #1f2937; /* Gray-800 */
-             border-color: #3b82f6; /* Blue-500 */
+        .cage {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            border: 8px solid #ffd700;
+            border-radius: 50%;
+            background-image: radial-gradient(circle, transparent 60%, rgba(255, 215, 0, 0.2) 80%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
         }
-        .dark .ticket {
-            background-color: #1f2937; /* Gray-800 */
-            border-color: #4b5563; /* Gray-600 */
+        .cage.spinning {
+             animation: spin 1s linear infinite;
         }
-        .dark .ticket-number {
-            border-color: #4b5563; /* Gray-600 */
+        .cage-balls-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
         }
-        .dark .ticket-number.marked {
-            background-color: #FBBF24; /* Amber-400 */
+        .cage .ball {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background-color: #fff;
+            animation: bounce 0.5s infinite alternate;
         }
-        .dark .bg-gray-100 {
-            background-color: #374151; /* Gray-700 */
+        .stand {
+            width: 20px;
+            background: linear-gradient(#aaa, #666);
+            z-index: 5;
         }
-        .dark .modal-overlay .bg-white {
-             background-color: #1f2937; /* Gray-800 */
+        .stand.top { height: 30px; margin-bottom: -4px; }
+        .stand.bottom { height: 50px; margin-top: -4px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;}
+
+        .chute {
+            position: absolute;
+            bottom: 40px;
+            width: 150px;
+            height: 40px;
+            background: #888;
+            border: 2px solid #555;
+            border-radius: 10px;
+            transform: rotate(-20deg);
+            z-index: 20;
+            left: 55%;
         }
+        #drawn-ball {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: #FBBF24;
+            border-radius: 50%;
+            color: #111827;
+            font-weight: 900;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.3);
+            border: 2px solid white;
+            top: -5px;
+            left: -20px;
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+        #drawn-ball.show {
+            animation: roll-out 1.5s forwards;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes bounce {
+            from { transform: translateY(-10px) scale(1); }
+            to { transform: translateY(10px) scale(1.05); }
+        }
+        @keyframes roll-out {
+            0% { opacity: 1; left: -20px; transform: rotate(0deg); }
+            100% { opacity: 1; left: 110px; transform: rotate(720deg); }
+        }
+
+        /* Custom scrollbar for ticket list */
+        #your-tickets-list::-webkit-scrollbar { width: 8px; }
+        #your-tickets-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        #your-tickets-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
+        #your-tickets-list::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4">
+<body class="text-gray-200">
 
-    <div id="app" class="w-full max-w-5xl mx-auto">
-        <h1 class="text-4xl md:text-5xl font-bold text-center text-gray-800 mb-6">Tambola Game (Multiplayer)</h1>
+    <div id="app" class="w-full min-h-screen flex flex-col p-4 lg:p-6">
+        
+        <!-- Header -->
+        <header class="flex-shrink-0 flex justify-between items-center mb-4 glassmorphism rounded-xl p-3">
+            <h1 class="text-2xl md:text-3xl font-bold font-montserrat text-white tracking-wider">TAMBOLA PRO</h1>
+            <div class="flex items-center space-x-4">
+                <button id="showRulesBtn" class="btn bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Rules</button>
+                <div id="wallet-display" class="glassmorphism rounded-lg p-2 text-right">
+                    <div class="font-bold text-lg text-green-400">? 0.00</div>
+                    <div class="text-xs text-gray-400">Wallet</div>
+                </div>
+                <button id="loginBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Login</button>
+            </div>
+        </header>
 
-        <!-- Game Controls and Display -->
-        <div class="flex flex-col md:flex-row items-center justify-between mb-6 bg-white p-4 rounded-xl shadow-lg">
-            <div class="flex items-center space-x-4 mb-4 md:mb-0">
-                <button id="startGame" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md">Start Game</button>
-                <button id="resetGame" class="btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">Reset Game</button>
+        <!-- Main Content -->
+        <main class="flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6">
+            
+            <!-- Left Panel: Game Board -->
+            <div class="lg:col-span-1 glassmorphism rounded-xl p-4 flex flex-col">
+                <h2 class="text-xl font-bold text-center text-white mb-4 font-montserrat">GAME BOARD</h2>
+                <div id="board" class="grid grid-cols-10 gap-1.5 flex-grow">
+                    <!-- Numbers 1-90 will be generated here -->
+                </div>
             </div>
-            <div class="text-center">
-                <p class="text-lg text-gray-600">Current Number</p>
-                <div id="currentNumber" class="current-number-display text-6xl font-bold text-gray-900 rounded-full w-28 h-28 flex items-center justify-center border-4">--</div>
+
+            <!-- Center Panel: Live Draw and Controls -->
+            <div class="lg:col-span-2 flex flex-col space-y-6">
+                <div class="glassmorphism rounded-xl p-6 flex-grow flex flex-col justify-center items-center">
+                    <!-- Bingo Cage Animation -->
+                    <div id="animation-container" class="w-full h-full flex flex-col items-center justify-center">
+                        <div class="stand top"></div>
+                        <div id="cage" class="cage">
+                            <div id="cage-balls-container">
+                                <!-- Bouncing balls will be generated here -->
+                            </div>
+                        </div>
+                        <div class="stand bottom"></div>
+                        <div class="chute">
+                            <div id="drawn-ball" class="ball">
+                                <span id="drawn-number">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-lg text-gray-400 mt-4">Numbers Called: <span id="calledCount" class="font-bold text-xl text-white">0 / 90</span></p>
+                </div>
+                <div class="glassmorphism rounded-xl p-4 flex justify-center items-center space-x-4">
+                    <button id="startGame" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-md text-lg">START</button>
+                    <button id="resetGame" class="btn bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-md text-lg">RESET</button>
+                </div>
             </div>
-            <div class="text-center md:text-right">
-                <p class="text-lg text-gray-600">Numbers Called</p>
-                <p id="calledCount" class="text-3xl font-bold text-gray-900">0 / 90</p>
+
+            <!-- Right Panel: Tickets & Winners -->
+            <div class="lg:col-span-1 glassmorphism rounded-xl p-4 flex flex-col space-y-4">
+                <!-- Ticket Purchase Section -->
+                <div class="flex-shrink-0">
+                    <h2 class="text-xl font-bold text-white font-montserrat mb-2">BUY TICKETS</h2>
+                    <div class="flex items-center space-x-2">
+                        <input type="number" id="ticket-quantity" value="1" min="1" max="100" class="w-20 bg-gray-900/50 text-white font-bold text-center rounded-lg p-2 border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <button id="buyTicketsBtn" class="btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex-grow">Buy</button>
+                    </div>
+                </div>
+                
+                <!-- Your Tickets Section -->
+                <div class="flex-grow flex flex-col min-h-0">
+                    <h3 class="text-lg font-bold text-white font-montserrat mb-2 flex-shrink-0">YOUR TICKETS (<span id="your-tickets-count">0</span>)</h3>
+                    <div id="your-tickets-list" class="flex-grow space-y-3 pr-2 overflow-y-auto">
+                        <!-- Player's tickets will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Top Winners Section -->
+                <div class="flex-shrink-0">
+                    <h3 class="text-lg font-bold text-white font-montserrat mb-2">TOP 5 WINNERS</h3>
+                    <div id="top-winners-list" class="space-y-2">
+                        <!-- Top 5 winning tickets will be displayed here -->
+                    </div>
+                </div>
             </div>
+        </main>
+    </div>
+
+    <!-- Modals (Winner and Rules) -->
+    <div id="winnerModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="glassmorphism rounded-xl p-8 text-center max-w-sm mx-auto border-2 border-green-500">
+            <h2 class="text-4xl font-bold text-green-400 mb-4 font-montserrat">?? WINNER! ??</h2>
+            <p id="winningMessage" class="text-xl text-white mb-6"></p>
+            <button id="closeModal" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg">Close</button>
         </div>
-
-        <!-- Tambola Board -->
-        <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg mb-6">
-            <h2 class="text-2xl font-semibold text-center text-gray-700 mb-4">Game Board</h2>
-            <div id="board" class="grid grid-cols-10 gap-2">
-                <!-- Numbers 1-90 will be generated here by JavaScript -->
-            </div>
-        </div>
-
-        <!-- Ticket Section -->
-        <div class="bg-white p-6 rounded-xl shadow-lg">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-2 sm:mb-0">Your Ticket</h2>
-                <button id="generateTicket" class="btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-md">Generate New Ticket</button>
-            </div>
-            <div id="ticket-container" class="ticket p-4 rounded-lg">
-                <!-- Ticket will be generated here by JavaScript -->
-            </div>
-             <div id="winning-combinations" class="mt-4 text-center">
-                <!-- Winning combination claims will be displayed here -->
+    </div>
+    <div id="rulesModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="glassmorphism rounded-xl p-8 max-w-lg mx-auto text-white">
+            <h2 class="text-3xl font-bold mb-4 text-center font-montserrat">TAMBOLA RULES</h2>
+            <ul class="space-y-2 list-disc list-inside">
+                <li>Each player gets a unique ticket with 15 numbers.</li>
+                <li>The game calls numbers from 1 to 90 one by one.</li>
+                <li>If a called number is on your ticket, you mark it.</li>
+                <li>The first player to mark all numbers in a winning pattern claims a prize.</li>
+            </ul>
+            <h3 class="text-xl font-bold mt-6 mb-2 font-montserrat">Winning Combinations:</h3>
+            <ul class="space-y-2 list-disc list-inside">
+                <li><b>Jaldi 5:</b> First 5 numbers marked on your ticket.</li>
+                <li><b>Lines:</b> Completing all numbers in the Top, Middle, or Bottom row.</li>
+                <li><b>Corners:</b> The first and last numbers of the top and bottom rows.</li>
+                <li><b>Full House:</b> All 15 numbers on your ticket are marked. This is the biggest prize!</li>
+            </ul>
+            <div class="text-center mt-6">
+                <button id="closeRulesModal" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg">Got it!</button>
             </div>
         </div>
     </div>
-
-    <!-- Winning Modal -->
-    <div id="winnerModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-8 text-center max-w-sm mx-auto">
-            <h2 class="text-3xl font-bold text-green-500 mb-4">?? Winner! ??</h2>
-            <p id="winningMessage" class="text-xl text-gray-700 mb-6"></p>
-            <button id="closeModal" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg">Play Again</button>
-        </div>
-    </div>
-
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // 2. Connect to the Socket.IO server
-            // Replace with your server's address if it's not running locally
             const socket = io('http://localhost:3000');
 
             // --- DOM Elements ---
             const board = document.getElementById('board');
-            const currentNumberDisplay = document.getElementById('currentNumber');
             const calledCountDisplay = document.getElementById('calledCount');
             const startGameBtn = document.getElementById('startGame');
             const resetGameBtn = document.getElementById('resetGame');
-            const generateTicketBtn = document.getElementById('generateTicket');
-            const ticketContainer = document.getElementById('ticket-container');
-            const winningCombinationsContainer = document.getElementById('winning-combinations');
+            const buyTicketsBtn = document.getElementById('buyTicketsBtn');
+            const ticketQuantityInput = document.getElementById('ticket-quantity');
+            const yourTicketsList = document.getElementById('your-tickets-list');
+            const yourTicketsCount = document.getElementById('your-tickets-count');
+            const topWinnersList = document.getElementById('top-winners-list');
+            
             const winnerModal = document.getElementById('winnerModal');
             const winningMessage = document.getElementById('winningMessage');
             const closeModalBtn = document.getElementById('closeModal');
+            
+            const rulesModal = document.getElementById('rulesModal');
+            const showRulesBtn = document.getElementById('showRulesBtn');
+            const closeRulesModalBtn = document.getElementById('closeRulesModal');
+
+            const cage = document.getElementById('cage');
+            const cageBallsContainer = document.getElementById('cage-balls-container');
+            const drawnBall = document.getElementById('drawn-ball');
+            const drawnNumber = document.getElementById('drawn-number');
 
             // --- Client-side State ---
-            let playerTicket = null;
-            let claimedWinnings = new Set();
+            let playerTickets = [];
             let allCalledNumbers = new Set();
+            let claimedPrizesGlobally = {}; // NEW: Changed to an object
 
-            // --- Initialization ---
             function init() {
-                // Create the board visuals
                 board.innerHTML = '';
                 for (let i = 1; i <= 90; i++) {
                     const numberEl = document.createElement('div');
-                    numberEl.classList.add('board-number', 'w-full', 'h-10', 'flex', 'items-center', 'justify-center', 'text-lg', 'font-semibold', 'rounded-md');
+                    numberEl.className = 'board-number w-full h-8 flex items-center justify-center text-sm rounded-sm bg-slate-700/50';
                     numberEl.textContent = i;
                     numberEl.id = `board-num-${i}`;
                     board.appendChild(numberEl);
                 }
-                generateNewTicket();
-                updateWinningClaims();
+                
+                for (let i = 0; i < 15; i++) {
+                    const ball = document.createElement('div');
+                    ball.className = 'ball';
+                    ball.style.left = `${Math.random() * 80}%`;
+                    ball.style.top = `${Math.random() * 80}%`;
+                    ball.style.animationDelay = `${Math.random() * 0.5}s`;
+                    ball.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 70%)`;
+                    cageBallsContainer.appendChild(ball);
+                }
+
+                buyTickets(1);
             }
 
-            // --- UI Update Functions ---
             function updateBoard(calledNumbers) {
                 allCalledNumbers = new Set(calledNumbers);
-                // First, reset all numbers on the board
                 document.querySelectorAll('.board-number').forEach(el => el.classList.remove('called'));
-                // Then, mark the ones that have been called
                 calledNumbers.forEach(num => {
                     const boardNumEl = document.getElementById(`board-num-${num}`);
-                    if (boardNumEl) {
-                        boardNumEl.classList.add('called');
-                    }
+                    if (boardNumEl) boardNumEl.classList.add('called');
                 });
-                // Update the count
                 calledCountDisplay.textContent = `${calledNumbers.length} / 90`;
-                // Check ticket against the new list of numbers
-                checkTicket(calledNumbers);
+                checkAllTickets(calledNumbers);
             }
 
-            function checkTicket(calledNumbers) {
-                if (!playerTicket) return;
-                playerTicket.marked.clear();
-                const ticketNumbers = playerTicket.numbers.flat().filter(n => n !== null);
-                
-                ticketNumbers.forEach(num => {
-                    if (calledNumbers.includes(num)) {
-                        playerTicket.marked.add(num);
-                    }
+            function checkAllTickets(calledNumbers) {
+                if (playerTickets.length === 0) return;
+                playerTickets.forEach(ticket => {
+                    ticket.marked.clear();
+                    const ticketNumbers = ticket.numbers.flat().filter(n => n !== null);
+                    ticketNumbers.forEach(num => {
+                        if (calledNumbers.includes(num)) ticket.marked.add(num);
+                    });
+                    checkWinningCombinations(ticket);
                 });
-                renderTicket();
-                checkWinningCombinations();
+                renderAllTickets();
+                updateTopWinners();
             }
             
-            // --- Event Emitters (Client -> Server) ---
-            startGameBtn.addEventListener('click', () => {
-                console.log('Client: Emitting startGame');
-                socket.emit('startGame');
+            startGameBtn.addEventListener('click', () => socket.emit('startGame'));
+            resetGameBtn.addEventListener('click', () => socket.emit('resetGame'));
+            buyTicketsBtn.addEventListener('click', () => {
+                const quantity = parseInt(ticketQuantityInput.value, 10);
+                if (quantity > 0 && quantity <= 100) {
+                    buyTickets(quantity);
+                } else {
+                    alert("Please enter a number between 1 and 100.");
+                }
             });
 
-            resetGameBtn.addEventListener('click', () => {
-                console.log('Client: Emitting resetGame');
-                socket.emit('resetGame');
-            });
-
-            // --- Socket.IO Event Listeners (Server -> Client) ---
-            socket.on('connect', () => {
-                console.log(`Connected to server with id: ${socket.id}`);
-            });
+            // --- Socket Listeners ---
+            socket.on('connect', () => console.log(`Connected to server with id: ${socket.id}`));
 
             socket.on('gameState', (state) => {
-                console.log('Client: Received initial gameState', state);
                 updateBoard(state.calledNumbers);
+                claimedPrizesGlobally = state.claimedPrizes; // Sync claimed prizes object
                 const lastNumber = state.currentNumber;
-                currentNumberDisplay.textContent = lastNumber || '--';
+                drawnNumber.textContent = lastNumber || '--';
+                if(lastNumber) {
+                    drawnBall.classList.add('show');
+                } else {
+                    drawnBall.classList.remove('show');
+                }
                 startGameBtn.disabled = state.isGameRunning;
             });
 
             socket.on('newNumber', (data) => {
-                console.log('Client: Received newNumber', data);
-                currentNumberDisplay.textContent = data.number;
-                currentNumberDisplay.classList.add('animate-pulse');
-                setTimeout(() => currentNumberDisplay.classList.remove('animate-pulse'), 1500);
-                updateBoard(data.calledNumbers);
-                startGameBtn.disabled = true;
+                cage.classList.add('spinning');
+                drawnBall.classList.remove('show');
+
+                setTimeout(() => {
+                    cage.classList.remove('spinning');
+                    drawnNumber.textContent = data.number;
+                    drawnBall.classList.add('show');
+                    updateBoard(data.calledNumbers);
+                    startGameBtn.disabled = true;
+                }, 2000);
             });
 
             socket.on('gameReset', () => {
-                console.log('Client: Received gameReset');
-                // Reset board visuals
                 document.querySelectorAll('.board-number.called').forEach(el => el.classList.remove('called'));
-                currentNumberDisplay.textContent = '--';
+                drawnBall.classList.remove('show');
+                drawnNumber.textContent = '--';
                 calledCountDisplay.textContent = '0 / 90';
-                // Reset ticket state
-                if (playerTicket) {
-                    playerTicket.marked.clear();
-                    renderTicket();
-                }
-                claimedWinnings.clear();
-                updateWinningClaims();
+                claimedPrizesGlobally = {}; // Reset global prize tracker
+                playerTickets.forEach(ticket => {
+                    ticket.claimedWinnings.clear(); // Reset local ticket claim attempts
+                    ticket.marked.clear();
+                });
+                renderAllTickets();
+                updateTopWinners();
                 startGameBtn.disabled = false;
             });
             
@@ -278,24 +445,33 @@
                 showWinner(message);
                 startGameBtn.disabled = true;
             });
-
-            // --- Local Ticket Logic (No changes needed here) ---
             
-            /**
-             * Generates a new random ticket.
-             * This version includes a "circuit breaker" to prevent infinite loops
-             * that can cause the page to freeze.
-             */
-            function generateNewTicket() {
-                const ticket = {
-                    rows: 3,
-                    cols: 9,
-                    numbers: [],
-                    marked: new Set()
-                };
-                let grid = Array(ticket.rows).fill(null).map(() => Array(ticket.cols).fill(null));
+            // NEW: Listen for the official prize announcement from the server
+            socket.on('prizeAnnounced', (data) => {
+                console.log('Prize has been officially claimed:', data);
+                claimedPrizesGlobally[data.prizeKey] = { winners: data.winners }; // Update global prize tracker
                 
-                // 1. Get 15 unique random numbers
+                let winnerText;
+                if (data.winners.length > 1) {
+                    winnerText = `Tickets #${data.winners.join(', #')} are co-winners for ${data.prizeName}!`;
+                } else {
+                    winnerText = `Ticket #${data.winners[0]} won ${data.prizeName}!`;
+                }
+                showWinner(winnerText);
+            });
+
+            function buyTickets(quantity) {
+                playerTickets = [];
+                for (let i = 0; i < quantity; i++) {
+                    playerTickets.push(generateNewTicket());
+                }
+                checkAllTickets(Array.from(allCalledNumbers));
+            }
+
+            function generateNewTicket() {
+                const ticketId = Math.floor(100000 + Math.random() * 900000);
+                const ticket = { id: ticketId, rows: 3, cols: 9, numbers: [], marked: new Set(), claimedWinnings: new Set() };
+                let grid = Array(ticket.rows).fill(null).map(() => Array(ticket.cols).fill(null));
                 const allPossibleNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
                 let numbersToPlace = [];
                 for (let i = 0; i < 15; i++) {
@@ -303,120 +479,127 @@
                     numbersToPlace.push(allPossibleNumbers.splice(randIndex, 1)[0]);
                 }
                 numbersToPlace.sort((a,b) => a-b);
-                
-                // 2. Try to place numbers on the grid
                 let placedCount = 0;
-                let loopBreaker = 0; // FIX: Add a circuit breaker
+                let loopBreaker = 0;
                 while(placedCount < 15){
-                    loopBreaker++; // Increment breaker
-                    if (loopBreaker > 5000) { // FIX: Check breaker to prevent freezing
-                        console.error("Ticket generation failed due to too many attempts. Retrying...");
-                        generateNewTicket(); // Recursive call to try again
-                        return; // Exit this failed function call
+                    loopBreaker++;
+                    if (loopBreaker > 5000) {
+                        return generateNewTicket();
                     }
-
                     const num = numbersToPlace[placedCount];
                     const col = Math.floor((num - 1) / 10);
                     const row = Math.floor(Math.random() * 3);
-
-                    // Check if the row has space (max 5 numbers)
                     if(grid[row].filter(n => n !== null).length < 5 && grid[row][col] === null){
-                        
-                        // Check if the column has space (max 3 numbers)
                         let colCount = 0;
-                        for(let r=0; r<3; r++){
-                            if(grid[r][col] !== null) colCount++;
-                        }
-                        
+                        for(let r=0; r<3; r++) if(grid[r][col] !== null) colCount++;
                         if(colCount < 3){
                            grid[row][col] = num;
                            placedCount++;
                         }
                     }
                 }
-                
-                // 3. Finalize ticket
                 ticket.numbers = grid;
-                playerTicket = ticket;
-                claimedWinnings.clear();
-                checkTicket(Array.from(allCalledNumbers));
-                updateWinningClaims();
+                return ticket;
             }
 
-            function renderTicket() {
-                if (!playerTicket) return;
-                ticketContainer.innerHTML = '';
+            function renderAllTickets() {
+                yourTicketsList.innerHTML = '';
+                yourTicketsCount.textContent = playerTickets.length;
+                playerTickets.forEach(ticket => {
+                    const ticketEl = renderTicket(ticket);
+                    yourTicketsList.appendChild(ticketEl);
+                });
+            }
+
+            function renderTicket(ticket) {
+                const ticketWrapper = document.createElement('div');
+                ticketWrapper.className = 'traditional-ticket rounded-lg';
+                
+                const ticketHeader = document.createElement('div');
+                ticketHeader.className = 'ticket-header';
+                ticketHeader.textContent = `TICKET NO. ${ticket.id}`;
+                ticketWrapper.appendChild(ticketHeader);
+
                 const gridEl = document.createElement('div');
-                gridEl.className = 'grid grid-cols-9 gap-1';
-                playerTicket.numbers.forEach(row => {
+                gridEl.className = 'grid grid-cols-9 grid-rows-3 gap-px h-full bg-gray-300';
+                ticket.numbers.forEach(row => {
                     row.forEach(number => {
                         const cell = document.createElement('div');
-                        cell.className = 'ticket-number w-full h-12 flex items-center justify-center text-lg font-medium rounded';
+                        cell.className = 'ticket-number w-full h-full flex items-center justify-center text-xl font-courier bg-white';
+                        const numberText = document.createElement('span');
+                        numberText.className = 'number-text';
+                        const dabberEl = document.createElement('div');
+                        dabberEl.className = 'dabber';
+
                         if (number !== null) {
-                            cell.textContent = number;
-                            if (playerTicket.marked.has(number)) {
+                            numberText.textContent = number;
+                            if (ticket.marked.has(number)) {
                                 cell.classList.add('marked');
+                                cell.appendChild(dabberEl);
                             }
                         } else {
-                            cell.classList.add('bg-gray-100');
+                            cell.classList.add('empty');
                         }
+                        cell.appendChild(numberText);
                         gridEl.appendChild(cell);
                     });
                 });
-                ticketContainer.appendChild(gridEl);
+                ticketWrapper.appendChild(gridEl);
+                return ticketWrapper;
+            }
+            
+            function updateTopWinners() {
+                topWinnersList.innerHTML = '';
+                const sortedTickets = [...playerTickets].sort((a, b) => b.marked.size - a.marked.size);
+                const top5 = sortedTickets.slice(0, 5);
+
+                if (top5.length === 0 || top5[0].marked.size === 0) {
+                    topWinnersList.innerHTML = '<p class="text-gray-500 text-xs text-center">No winners yet. Play on!</p>';
+                    return;
+                }
+
+                top5.forEach((ticket, index) => {
+                    const winnerEl = document.createElement('div');
+                    winnerEl.className = 'flex items-center justify-between bg-gray-900/50 p-2 rounded-lg';
+                    winnerEl.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="font-bold text-lg mr-3 text-yellow-400">#${index + 1}</span>
+                            <span class="text-sm font-courier">TICKET ${ticket.id}</span>
+                        </div>
+                        <span class="font-bold text-lg text-green-400">${ticket.marked.size} / 15</span>
+                    `;
+                    topWinnersList.appendChild(winnerEl);
+                });
             }
 
             const WINNINGS = {
-                JALDI_5: { name: "Jaldi 5", check: (ticket) => ticket.marked.size >= 5 },
-                TOP_LINE: { name: "Top Line", check: (ticket) => ticket.numbers[0].filter(n => n !== null).every(num => ticket.marked.has(num)) },
-                MIDDLE_LINE: { name: "Middle Line", check: (ticket) => ticket.numbers[1].filter(n => n !== null).every(num => ticket.marked.has(num)) },
-                BOTTOM_LINE: { name: "Bottom Line", check: (ticket) => ticket.numbers[2].filter(n => n !== null).every(num => ticket.marked.has(num)) },
-                CORNERS: { name: "Corners", check: (ticket) => {
+                JALDI_5: { name: "Jaldi 5", check: (t) => t.marked.size >= 5 },
+                TOP_LINE: { name: "Top Line", check: (t) => t.numbers[0].filter(n => n !== null).every(num => t.marked.has(num)) },
+                MIDDLE_LINE: { name: "Middle Line", check: (t) => t.numbers[1].filter(n => n !== null).every(num => t.marked.has(num)) },
+                BOTTOM_LINE: { name: "Bottom Line", check: (t) => t.numbers[2].filter(n => n !== null).every(num => t.marked.has(num)) },
+                CORNERS: { name: "Corners", check: (t) => {
                     const corners = [
-                        ticket.numbers[0].find(n => n !== null),
-                        ticket.numbers[0].slice().reverse().find(n => n !== null),
-                        ticket.numbers[2].find(n => n !== null),
-                        ticket.numbers[2].slice().reverse().find(n => n !== null)
+                        t.numbers[0].find(n => n !== null),
+                        t.numbers[0].slice().reverse().find(n => n !== null),
+                        t.numbers[2].find(n => n !== null),
+                        t.numbers[2].slice().reverse().find(n => n !== null)
                     ].filter(Boolean);
-                    return corners.length >= 4 && corners.every(c => ticket.marked.has(c));
+                    return corners.length >= 4 && corners.every(c => t.marked.has(c));
                 }},
-                FULL_HOUSE: { name: "Full House", check: (ticket) => ticket.numbers.flat().every(num => num === null || ticket.marked.has(num)) }
+                FULL_HOUSE: { name: "Full House", check: (t) => t.numbers.flat().every(num => num === null || t.marked.has(num)) }
             };
 
-            function checkWinningCombinations() {
-                if (!playerTicket) return;
+            function checkWinningCombinations(ticket) {
+                if (!ticket) return;
                 for (const [key, win] of Object.entries(WINNINGS)) {
-                    if (!claimedWinnings.has(key) && win.check(playerTicket)) {
-                       claimWinning(key);
+                    // NEW: Check if this prize has NOT been claimed globally AND this ticket hasn't already tried to claim it
+                    if (!claimedPrizesGlobally[key] && !ticket.claimedWinnings.has(key) && win.check(ticket)) {
+                       // Mark that this ticket has now attempted a claim for this prize
+                       ticket.claimedWinnings.add(key);
+                       // Emit the claim to the server for verification
+                       socket.emit('claimPrize', { ticketId: ticket.id, prizeKey: key });
                     }
                 }
-            }
-            
-            function claimWinning(key) {
-                claimedWinnings.add(key);
-                const winName = WINNINGS[key].name;
-                showWinner(`You've won ${winName}!`);
-                updateWinningClaims();
-                if (key === 'FULL_HOUSE') {
-                    socket.emit('gameOver', `A player won Full House!`);
-                }
-            }
-
-            function updateWinningClaims() {
-                winningCombinationsContainer.innerHTML = '<h3 class="text-lg font-semibold mb-2 text-gray-700">Claimed Winnings:</h3>';
-                if(claimedWinnings.size === 0) {
-                    winningCombinationsContainer.innerHTML += '<p class="text-gray-500">No winnings claimed yet.</p>';
-                    return;
-                }
-                const claimsList = document.createElement('div');
-                claimsList.className = 'flex flex-wrap justify-center gap-2';
-                claimedWinnings.forEach(key => {
-                    const claimEl = document.createElement('span');
-                    claimEl.className = 'bg-yellow-400 text-yellow-900 font-bold py-1 px-3 rounded-full text-sm';
-                    claimEl.textContent = WINNINGS[key].name;
-                    claimsList.appendChild(claimEl);
-                });
-                winningCombinationsContainer.appendChild(claimsList);
             }
             
             function showWinner(message) {
@@ -424,14 +607,10 @@
                 winnerModal.classList.remove('hidden');
             }
 
-            function hideModal() {
-                winnerModal.classList.add('hidden');
-            }
-
-            generateTicketBtn.addEventListener('click', generateNewTicket);
-            closeModalBtn.addEventListener('click', hideModal);
+            closeModalBtn.addEventListener('click', () => winnerModal.classList.add('hidden'));
+            showRulesBtn.addEventListener('click', () => rulesModal.classList.remove('hidden'));
+            closeRulesModalBtn.addEventListener('click', () => rulesModal.classList.add('hidden'));
             
-            // --- Initial Load ---
             init();
         });
     </script>

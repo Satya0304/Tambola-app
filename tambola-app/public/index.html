@@ -94,31 +94,48 @@
              background-color: #f3f4f6; /* Light gray for empty cells */
         }
         
-        /* --- Bingo Cage Animation --- */
+        /* --- NEW Professional Bingo Cage Animation --- */
         #animation-container {
             position: relative;
             width: 100%;
             height: 100%;
+            perspective: 800px;
+        }
+        .cage-wrapper {
+            transform-style: preserve-3d;
+            animation: gentle-bob 4s ease-in-out infinite;
         }
         .cage {
             position: relative;
             width: 180px;
             height: 180px;
-            border: 8px solid #ffd700;
             border-radius: 50%;
-            background-image: radial-gradient(circle, transparent 60%, rgba(255, 215, 0, 0.2) 80%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
+            transform-style: preserve-3d;
+            background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent 50%);
         }
         .cage.spinning {
-             animation: spin 1s linear infinite;
+             animation: spin3d 1s linear infinite;
         }
+        .cage-bar {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid;
+            border-color: #ffd700 transparent;
+        }
+        .cage-bar:nth-child(1) { transform: rotateY(0deg) rotateX(0deg); }
+        .cage-bar:nth-child(2) { transform: rotateY(60deg) rotateX(0deg); }
+        .cage-bar:nth-child(3) { transform: rotateY(120deg) rotateX(0deg); }
+        .cage-bar:nth-child(4) { transform: rotateX(90deg) rotateY(30deg); }
+        .cage-bar:nth-child(5) { transform: rotateX(90deg) rotateY(90deg); }
+        .cage-bar:nth-child(6) { transform: rotateX(90deg) rotateY(150deg); }
+
         .cage-balls-container {
             position: absolute;
             width: 100%;
             height: 100%;
+            transform-style: preserve-3d;
         }
         .cage .ball {
             position: absolute;
@@ -126,33 +143,34 @@
             height: 25px;
             border-radius: 50%;
             background-color: #fff;
-            animation: bounce 0.5s infinite alternate;
+            animation: bounce-3d 0.5s infinite alternate;
         }
         .stand {
             width: 20px;
-            background: linear-gradient(#aaa, #666);
+            background: linear-gradient(#ccc, #888);
             z-index: 5;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
-        .stand.top { height: 30px; margin-bottom: -4px; }
-        .stand.bottom { height: 50px; margin-top: -4px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;}
+        .stand.top { height: 30px; margin-bottom: -10px; border-top-left-radius: 5px; border-top-right-radius: 5px;}
+        .stand.bottom { height: 50px; margin-top: -10px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;}
 
         .chute {
             position: absolute;
-            bottom: 40px;
+            bottom: 45px;
             width: 150px;
             height: 40px;
-            background: #888;
-            border: 2px solid #555;
+            background: #999;
+            border: 2px solid #666;
             border-radius: 10px;
-            transform: rotate(-20deg);
+            transform: rotate(-20deg) translateX(50px);
             z-index: 20;
-            left: 55%;
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.4);
         }
         #drawn-ball {
             position: absolute;
             width: 50px;
             height: 50px;
-            background: #FBBF24;
+            background: radial-gradient(circle at 30% 30%, #fff, #FBBF24);
             border-radius: 50%;
             color: #111827;
             font-weight: 900;
@@ -160,28 +178,33 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
             border: 2px solid white;
-            top: -5px;
-            left: -20px;
             opacity: 0;
+            transform: translateY(50px);
             transition: all 0.5s ease;
+            z-index: 25;
         }
         #drawn-ball.show {
-            animation: roll-out 1.5s forwards;
+            animation: reveal-number 1.5s forwards;
         }
 
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        @keyframes spin3d {
+            from { transform: rotateY(0deg) rotateX(5deg); }
+            to { transform: rotateY(360deg) rotateX(5deg); }
         }
-        @keyframes bounce {
-            from { transform: translateY(-10px) scale(1); }
-            to { transform: translateY(10px) scale(1.05); }
+        @keyframes bounce-3d {
+            from { transform: translateY(-15px) translateZ(10px) scale(1); }
+            to { transform: translateY(15px) translateZ(-10px) scale(1.05); }
         }
-        @keyframes roll-out {
-            0% { opacity: 1; left: -20px; transform: rotate(0deg); }
-            100% { opacity: 1; left: 110px; transform: rotate(720deg); }
+        @keyframes gentle-bob {
+            0%, 100% { transform: translateY(0) rotateX(5deg); }
+            50% { transform: translateY(-10px) rotateX(-5deg); }
+        }
+        @keyframes reveal-number {
+            0% { opacity: 0; transform: translateY(50px) scale(0.5); }
+            50% { opacity: 1; transform: translateY(-20px) scale(1.2); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         /* Custom scrollbar for ticket list */
@@ -224,17 +247,20 @@
                 <div class="glassmorphism rounded-xl p-6 flex-grow flex flex-col justify-center items-center">
                     <!-- Bingo Cage Animation -->
                     <div id="animation-container" class="w-full h-full flex flex-col items-center justify-center">
-                        <div class="stand top"></div>
-                        <div id="cage" class="cage">
-                            <div id="cage-balls-container">
-                                <!-- Bouncing balls will be generated here -->
+                        <div class="cage-wrapper">
+                            <div class="stand top"></div>
+                            <div id="cage" class="cage">
+                                <div class="cage-bar"></div><div class="cage-bar"></div><div class="cage-bar"></div>
+                                <div class="cage-bar"></div><div class="cage-bar"></div><div class="cage-bar"></div>
+                                <div id="cage-balls-container">
+                                    <!-- Bouncing balls will be generated here -->
+                                </div>
                             </div>
+                            <div class="stand bottom"></div>
                         </div>
-                        <div class="stand bottom"></div>
-                        <div class="chute">
-                            <div id="drawn-ball" class="ball">
-                                <span id="drawn-number">--</span>
-                            </div>
+                        <div class="chute"></div>
+                        <div id="drawn-ball">
+                            <span id="drawn-number">--</span>
                         </div>
                     </div>
                     <p class="text-lg text-gray-400 mt-4">Numbers Called: <span id="calledCount" class="font-bold text-xl text-white">0 / 90</span></p>
@@ -256,19 +282,19 @@
                     </div>
                 </div>
                 
-                <!-- Your Tickets Section -->
-                <div class="flex-grow flex flex-col min-h-0">
-                    <h3 class="text-lg font-bold text-white font-montserrat mb-2 flex-shrink-0">YOUR TICKETS (<span id="your-tickets-count">0</span>)</h3>
-                    <div id="your-tickets-list" class="flex-grow space-y-3 pr-2 overflow-y-auto">
-                        <!-- Player's tickets will be rendered here -->
-                    </div>
-                </div>
-
                 <!-- Top Winners Section -->
                 <div class="flex-shrink-0">
                     <h3 class="text-lg font-bold text-white font-montserrat mb-2">TOP 5 WINNERS</h3>
                     <div id="top-winners-list" class="space-y-2">
                         <!-- Top 5 winning tickets will be displayed here -->
+                    </div>
+                </div>
+
+                <!-- Your Tickets Section -->
+                <div class="flex-grow flex flex-col min-h-0">
+                    <h3 class="text-lg font-bold text-white font-montserrat mb-2 flex-shrink-0">YOUR TICKETS (<span id="your-tickets-count">0</span>)</h3>
+                    <div id="your-tickets-list" class="flex-grow space-y-3 pr-2 overflow-y-auto">
+                        <!-- Player's tickets will be rendered here -->
                     </div>
                 </div>
             </div>
@@ -296,7 +322,6 @@
             <ul class="space-y-2 list-disc list-inside">
                 <li><b>Jaldi 5:</b> First 5 numbers marked on your ticket.</li>
                 <li><b>Lines:</b> Completing all numbers in the Top, Middle, or Bottom row.</li>
-                <li><b>Corners:</b> The first and last numbers of the top and bottom rows.</li>
                 <li><b>Full House:</b> All 15 numbers on your ticket are marked. This is the biggest prize!</li>
             </ul>
             <div class="text-center mt-6">
@@ -336,7 +361,7 @@
             // --- Client-side State ---
             let playerTickets = [];
             let allCalledNumbers = new Set();
-            let claimedPrizesGlobally = {}; // NEW: Changed to an object
+            let claimedPrizesGlobally = {}; 
 
             function init() {
                 board.innerHTML = '';
@@ -402,7 +427,7 @@
 
             socket.on('gameState', (state) => {
                 updateBoard(state.calledNumbers);
-                claimedPrizesGlobally = state.claimedPrizes; // Sync claimed prizes object
+                claimedPrizesGlobally = state.claimedPrizes; 
                 const lastNumber = state.currentNumber;
                 drawnNumber.textContent = lastNumber || '--';
                 if(lastNumber) {
@@ -431,9 +456,9 @@
                 drawnBall.classList.remove('show');
                 drawnNumber.textContent = '--';
                 calledCountDisplay.textContent = '0 / 90';
-                claimedPrizesGlobally = {}; // Reset global prize tracker
+                claimedPrizesGlobally = {}; 
                 playerTickets.forEach(ticket => {
-                    ticket.claimedWinnings.clear(); // Reset local ticket claim attempts
+                    ticket.claimedWinnings.clear(); 
                     ticket.marked.clear();
                 });
                 renderAllTickets();
@@ -446,10 +471,9 @@
                 startGameBtn.disabled = true;
             });
             
-            // NEW: Listen for the official prize announcement from the server
             socket.on('prizeAnnounced', (data) => {
                 console.log('Prize has been officially claimed:', data);
-                claimedPrizesGlobally[data.prizeKey] = { winners: data.winners }; // Update global prize tracker
+                claimedPrizesGlobally[data.prizeKey] = { winners: data.winners }; 
                 
                 let winnerText;
                 if (data.winners.length > 1) {
@@ -577,26 +601,14 @@
                 TOP_LINE: { name: "Top Line", check: (t) => t.numbers[0].filter(n => n !== null).every(num => t.marked.has(num)) },
                 MIDDLE_LINE: { name: "Middle Line", check: (t) => t.numbers[1].filter(n => n !== null).every(num => t.marked.has(num)) },
                 BOTTOM_LINE: { name: "Bottom Line", check: (t) => t.numbers[2].filter(n => n !== null).every(num => t.marked.has(num)) },
-                CORNERS: { name: "Corners", check: (t) => {
-                    const corners = [
-                        t.numbers[0].find(n => n !== null),
-                        t.numbers[0].slice().reverse().find(n => n !== null),
-                        t.numbers[2].find(n => n !== null),
-                        t.numbers[2].slice().reverse().find(n => n !== null)
-                    ].filter(Boolean);
-                    return corners.length >= 4 && corners.every(c => t.marked.has(c));
-                }},
                 FULL_HOUSE: { name: "Full House", check: (t) => t.numbers.flat().every(num => num === null || t.marked.has(num)) }
             };
 
             function checkWinningCombinations(ticket) {
                 if (!ticket) return;
                 for (const [key, win] of Object.entries(WINNINGS)) {
-                    // NEW: Check if this prize has NOT been claimed globally AND this ticket hasn't already tried to claim it
                     if (!claimedPrizesGlobally[key] && !ticket.claimedWinnings.has(key) && win.check(ticket)) {
-                       // Mark that this ticket has now attempted a claim for this prize
                        ticket.claimedWinnings.add(key);
-                       // Emit the claim to the server for verification
                        socket.emit('claimPrize', { ticketId: ticket.id, prizeKey: key });
                     }
                 }

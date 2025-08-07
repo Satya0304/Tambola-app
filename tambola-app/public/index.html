@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambola - Housie Game (Multiplayer)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- 1. Include the Socket.IO client library -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .board-number {
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .board-number.called {
+            background-color: #10B981; /* Emerald-500 */
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .current-number-display {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15), 0 3px 6px rgba(0,0,0,0.1);
+        }
+        .ticket {
+            border: 2px solid #4A5568; /* Gray-600 */
+        }
+        .ticket-number {
+            border: 1px solid #374151; /* Gray-700 */
+        }
+        .ticket-number.marked {
+            background-color: #FBBF24; /* Amber-400 */
+            color: #1f2937; /* Gray-800 */
+            text-decoration: line-through;
+            font-weight: bold;
+        }
+        .btn {
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        
+        /* Dark Mode Styles */
+        .dark body {
+            background-color: #111827; /* Gray-900 */
+            color: #d1d5db; /* Gray-300 */
+        }
+        .dark .bg-white {
+            background-color: #1f2937; /* Gray-800 */
+        }
+        .dark .text-gray-800 {
+            color: #f9fafb; /* Gray-50 */
+        }
+        .dark .text-gray-700 {
+            color: #d1d5db; /* Gray-300 */
+        }
+        .dark .text-gray-600 {
+            color: #9ca3af; /* Gray-400 */
+        }
+        .dark .text-gray-900 {
+             color: #f9fafb; /* Gray-50 */
+        }
+        .dark .board-number {
+            background-color: #374151; /* Gray-700 */
+            color: #d1d5db; /* Gray-300 */
+        }
+        .dark .board-number.called {
+            background-color: #10B981; /* Emerald-500 */
+            color: white;
+        }
+        .dark .current-number-display {
+             background-color: #1f2937; /* Gray-800 */
+             border-color: #3b82f6; /* Blue-500 */
+        }
+        .dark .ticket {
+            background-color: #1f2937; /* Gray-800 */
+            border-color: #4b5563; /* Gray-600 */
+        }
+        .dark .ticket-number {
+            border-color: #4b5563; /* Gray-600 */
+        }
+        .dark .ticket-number.marked {
+            background-color: #FBBF24; /* Amber-400 */
+        }
+        .dark .bg-gray-100 {
+            background-color: #374151; /* Gray-700 */
+        }
+        .dark .modal-overlay .bg-white {
+             background-color: #1f2937; /* Gray-800 */
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-5xl mx-auto">
+        <h1 class="text-4xl md:text-5xl font-bold text-center text-gray-800 mb-6">Tambola Game (Multiplayer)</h1>
+
+        <!-- Game Controls and Display -->
+        <div class="flex flex-col md:flex-row items-center justify-between mb-6 bg-white p-4 rounded-xl shadow-lg">
+            <div class="flex items-center space-x-4 mb-4 md:mb-0">
+                <button id="startGame" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md">Start Game</button>
+                <button id="resetGame" class="btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">Reset Game</button>
+            </div>
+            <div class="text-center">
+                <p class="text-lg text-gray-600">Current Number</p>
+                <div id="currentNumber" class="current-number-display text-6xl font-bold text-gray-900 rounded-full w-28 h-28 flex items-center justify-center border-4">--</div>
+            </div>
+            <div class="text-center md:text-right">
+                <p class="text-lg text-gray-600">Numbers Called</p>
+                <p id="calledCount" class="text-3xl font-bold text-gray-900">0 / 90</p>
+            </div>
+        </div>
+
+        <!-- Tambola Board -->
+        <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg mb-6">
+            <h2 class="text-2xl font-semibold text-center text-gray-700 mb-4">Game Board</h2>
+            <div id="board" class="grid grid-cols-10 gap-2">
+                <!-- Numbers 1-90 will be generated here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Ticket Section -->
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-2 sm:mb-0">Your Ticket</h2>
+                <button id="generateTicket" class="btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-md">Generate New Ticket</button>
+            </div>
+            <div id="ticket-container" class="ticket p-4 rounded-lg">
+                <!-- Ticket will be generated here by JavaScript -->
+            </div>
+             <div id="winning-combinations" class="mt-4 text-center">
+                <!-- Winning combination claims will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Winning Modal -->
+    <div id="winnerModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-8 text-center max-w-sm mx-auto">
+            <h2 class="text-3xl font-bold text-green-500 mb-4">?? Winner! ??</h2>
+            <p id="winningMessage" class="text-xl text-gray-700 mb-6"></p>
+            <button id="closeModal" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg">Play Again</button>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 2. Connect to the Socket.IO server
+            // Replace with your server's address if it's not running locally
+            const socket = io('http://localhost:3000');
+
+            // --- DOM Elements ---
+            const board = document.getElementById('board');
+            const currentNumberDisplay = document.getElementById('currentNumber');
+            const calledCountDisplay = document.getElementById('calledCount');
+            const startGameBtn = document.getElementById('startGame');
+            const resetGameBtn = document.getElementById('resetGame');
+            const generateTicketBtn = document.getElementById('generateTicket');
+            const ticketContainer = document.getElementById('ticket-container');
+            const winningCombinationsContainer = document.getElementById('winning-combinations');
+            const winnerModal = document.getElementById('winnerModal');
+            const winningMessage = document.getElementById('winningMessage');
+            const closeModalBtn = document.getElementById('closeModal');
+
+            // --- Client-side State ---
+            let playerTicket = null;
+            let claimedWinnings = new Set();
+            let allCalledNumbers = new Set();
+
+            // --- Initialization ---
+            function init() {
+                // Create the board visuals
+                board.innerHTML = '';
+                for (let i = 1; i <= 90; i++) {
+                    const numberEl = document.createElement('div');
+                    numberEl.classList.add('board-number', 'w-full', 'h-10', 'flex', 'items-center', 'justify-center', 'text-lg', 'font-semibold', 'rounded-md');
+                    numberEl.textContent = i;
+                    numberEl.id = `board-num-${i}`;
+                    board.appendChild(numberEl);
+                }
+                generateNewTicket();
+                updateWinningClaims();
+            }
+
+            // --- UI Update Functions ---
+            function updateBoard(calledNumbers) {
+                allCalledNumbers = new Set(calledNumbers);
+                // First, reset all numbers on the board
+                document.querySelectorAll('.board-number').forEach(el => el.classList.remove('called'));
+                // Then, mark the ones that have been called
+                calledNumbers.forEach(num => {
+                    const boardNumEl = document.getElementById(`board-num-${num}`);
+                    if (boardNumEl) {
+                        boardNumEl.classList.add('called');
+                    }
+                });
+                // Update the count
+                calledCountDisplay.textContent = `${calledNumbers.length} / 90`;
+                // Check ticket against the new list of numbers
+                checkTicket(calledNumbers);
+            }
+
+            function checkTicket(calledNumbers) {
+                if (!playerTicket) return;
+                playerTicket.marked.clear();
+                const ticketNumbers = playerTicket.numbers.flat().filter(n => n !== null);
+                
+                ticketNumbers.forEach(num => {
+                    if (calledNumbers.includes(num)) {
+                        playerTicket.marked.add(num);
+                    }
+                });
+                renderTicket();
+                checkWinningCombinations();
+            }
+            
+            // --- Event Emitters (Client -> Server) ---
+            startGameBtn.addEventListener('click', () => {
+                console.log('Client: Emitting startGame');
+                socket.emit('startGame');
+            });
+
+            resetGameBtn.addEventListener('click', () => {
+                console.log('Client: Emitting resetGame');
+                socket.emit('resetGame');
+            });
+
+            // --- Socket.IO Event Listeners (Server -> Client) ---
+            socket.on('connect', () => {
+                console.log(`Connected to server with id: ${socket.id}`);
+            });
+
+            socket.on('gameState', (state) => {
+                console.log('Client: Received initial gameState', state);
+                updateBoard(state.calledNumbers);
+                const lastNumber = state.currentNumber;
+                currentNumberDisplay.textContent = lastNumber || '--';
+                startGameBtn.disabled = state.isGameRunning;
+            });
+
+            socket.on('newNumber', (data) => {
+                console.log('Client: Received newNumber', data);
+                currentNumberDisplay.textContent = data.number;
+                currentNumberDisplay.classList.add('animate-pulse');
+                setTimeout(() => currentNumberDisplay.classList.remove('animate-pulse'), 1500);
+                updateBoard(data.calledNumbers);
+                startGameBtn.disabled = true;
+            });
+
+            socket.on('gameReset', () => {
+                console.log('Client: Received gameReset');
+                // Reset board visuals
+                document.querySelectorAll('.board-number.called').forEach(el => el.classList.remove('called'));
+                currentNumberDisplay.textContent = '--';
+                calledCountDisplay.textContent = '0 / 90';
+                // Reset ticket state
+                if (playerTicket) {
+                    playerTicket.marked.clear();
+                    renderTicket();
+                }
+                claimedWinnings.clear();
+                updateWinningClaims();
+                startGameBtn.disabled = false;
+            });
+            
+            socket.on('gameOver', (message) => {
+                showWinner(message);
+                startGameBtn.disabled = true;
+            });
+
+            // --- Local Ticket Logic (No changes needed here) ---
+            function generateNewTicket() {
+                const ticket = {
+                    rows: 3,
+                    cols: 9,
+                    numbers: [],
+                    marked: new Set()
+                };
+                let grid = Array(ticket.rows).fill(null).map(() => Array(ticket.cols).fill(null));
+                const allPossibleNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
+                let numbersToPlace = [];
+                for (let i = 0; i < 15; i++) {
+                    const randIndex = Math.floor(Math.random() * allPossibleNumbers.length);
+                    numbersToPlace.push(allPossibleNumbers.splice(randIndex, 1)[0]);
+                }
+                numbersToPlace.sort((a,b) => a-b);
+                let placedCount = 0;
+                while(placedCount < 15){
+                    const num = numbersToPlace[placedCount];
+                    const col = Math.floor((num - 1) / 10);
+                    const row = Math.floor(Math.random() * 3);
+
+                    if(grid[row][col] === null && grid[row].filter(n => n !== null).length < 5){
+                        let colCount = grid[0][col] !== null ? 1 : 0;
+                        colCount += grid[1][col] !== null ? 1 : 0;
+                        colCount += grid[2][col] !== null ? 1 : 0;
+                        if(colCount < 2){
+                           grid[row][col] = num;
+                           placedCount++;
+                        }
+                    }
+                }
+                ticket.numbers = grid;
+                playerTicket = ticket;
+                claimedWinnings.clear();
+                checkTicket(Array.from(allCalledNumbers));
+                updateWinningClaims();
+            }
+
+            function renderTicket() {
+                if (!playerTicket) return;
+                ticketContainer.innerHTML = '';
+                const gridEl = document.createElement('div');
+                gridEl.className = 'grid grid-cols-9 gap-1';
+                playerTicket.numbers.forEach(row => {
+                    row.forEach(number => {
+                        const cell = document.createElement('div');
+                        cell.className = 'ticket-number w-full h-12 flex items-center justify-center text-lg font-medium rounded';
+                        if (number !== null) {
+                            cell.textContent = number;
+                            if (playerTicket.marked.has(number)) {
+                                cell.classList.add('marked');
+                            }
+                        } else {
+                            cell.classList.add('bg-gray-100');
+                        }
+                        gridEl.appendChild(cell);
+                    });
+                });
+                ticketContainer.appendChild(gridEl);
+            }
+
+            const WINNINGS = {
+                JALDI_5: { name: "Jaldi 5", check: (ticket) => ticket.marked.size >= 5 },
+                TOP_LINE: { name: "Top Line", check: (ticket) => ticket.numbers[0].filter(n => n !== null).every(num => ticket.marked.has(num)) },
+                MIDDLE_LINE: { name: "Middle Line", check: (ticket) => ticket.numbers[1].filter(n => n !== null).every(num => ticket.marked.has(num)) },
+                BOTTOM_LINE: { name: "Bottom Line", check: (ticket) => ticket.numbers[2].filter(n => n !== null).every(num => ticket.marked.has(num)) },
+                CORNERS: { name: "Corners", check: (ticket) => {
+                    const corners = [
+                        ticket.numbers[0].find(n => n !== null),
+                        ticket.numbers[0].slice().reverse().find(n => n !== null),
+                        ticket.numbers[2].find(n => n !== null),
+                        ticket.numbers[2].slice().reverse().find(n => n !== null)
+                    ].filter(Boolean);
+                    return corners.length >= 4 && corners.every(c => ticket.marked.has(c));
+                }},
+                FULL_HOUSE: { name: "Full House", check: (ticket) => ticket.numbers.flat().every(num => num === null || ticket.marked.has(num)) }
+            };
+
+            function checkWinningCombinations() {
+                if (!playerTicket) return;
+                for (const [key, win] of Object.entries(WINNINGS)) {
+                    if (!claimedWinnings.has(key) && win.check(playerTicket)) {
+                       claimWinning(key);
+                    }
+                }
+            }
+            
+            function claimWinning(key) {
+                claimedWinnings.add(key);
+                const winName = WINNINGS[key].name;
+                showWinner(`You've won ${winName}!`);
+                updateWinningClaims();
+                if (key === 'FULL_HOUSE') {
+                    socket.emit('gameOver', `A player won Full House!`);
+                }
+            }
+
+            function updateWinningClaims() {
+                winningCombinationsContainer.innerHTML = '<h3 class="text-lg font-semibold mb-2 text-gray-700">Claimed Winnings:</h3>';
+                if(claimedWinnings.size === 0) {
+                    winningCombinationsContainer.innerHTML += '<p class="text-gray-500">No winnings claimed yet.</p>';
+                    return;
+                }
+                const claimsList = document.createElement('div');
+                claimsList.className = 'flex flex-wrap justify-center gap-2';
+                claimedWinnings.forEach(key => {
+                    const claimEl = document.createElement('span');
+                    claimEl.className = 'bg-yellow-400 text-yellow-900 font-bold py-1 px-3 rounded-full text-sm';
+                    claimEl.textContent = WINNINGS[key].name;
+                    claimsList.appendChild(claimEl);
+                });
+                winningCombinationsContainer.appendChild(claimsList);
+            }
+            
+            function showWinner(message) {
+                winningMessage.textContent = message;
+                winnerModal.classList.remove('hidden');
+            }
+
+            function hideModal() {
+                winnerModal.classList.add('hidden');
+            }
+
+            generateTicketBtn.addEventListener('click', generateNewTicket);
+            closeModalBtn.addEventListener('click', hideModal);
+            
+            // --- Initial Load ---
+            init();
+        });
+    </script>
+</body>
+</html>

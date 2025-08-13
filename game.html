@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambola Game Screen - Gold Theme</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .bg-primary-dark { background-color: #121212; }
+        .bg-secondary-dark { background-color: #1E1E1E; }
+        .bg-accent-gold { background-color: #F9A825; }
+        .text-gold { color: #F9A825; }
+        .text-light { color: #E0E0E0; }
+        .text-white-full { color: #FFFFFF; }
+        .mobile-screen {
+            max-width: 414px;
+            height: 800px;
+            border: 16px solid #1E1E1E;
+            border-radius: 36px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .number-board-cell {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        .number-board-cell.called {
+            background-color: #F9A825;
+            color: black;
+            font-weight: 700;
+        }
+        .ticket {
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 8px;
+            border: 1px solid #444;
+        }
+        .ticket-hot {
+            border-color: #F9A825;
+            box-shadow: 0 0 15px rgba(249, 168, 37, 0.5);
+        }
+        .ticket-number {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+        .ticket-number.dabbed {
+            background-color: #F9A825;
+            color: black;
+        }
+        .ticket-number.empty {
+            background-color: #1E1E1E;
+        }
+    </style>
+</head>
+<body class="bg-gray-800 flex items-center justify-center h-screen">
+    <div class="mobile-screen bg-primary-dark text-white-full">
+        <!-- Top Section: Number Display & Board -->
+        <header class="p-4 bg-secondary-dark shadow-lg">
+            <div class="flex items-center justify-between">
+                <div class="text-center">
+                    <div class="text-xs text-light">Current Number</div>
+                    <div id="current-number-display" class="bg-accent-gold text-black text-4xl font-bold rounded-full w-20 h-20 flex items-center justify-center">
+                        --
+                    </div>
+                </div>
+                <!-- Number Board -->
+                <div id="number-board" class="grid grid-cols-10 gap-1 text-xs">
+                    <!-- Numbers 1-90 will be generated here by JavaScript -->
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content: Tickets Area -->
+        <main class="flex-grow p-4 overflow-y-auto">
+            <h2 class="text-gold font-bold mb-2">Your Tickets</h2>
+            <div id="tickets-container" class="space-y-4">
+                <!-- Tickets will be generated here by JavaScript -->
+            </div>
+        </main>
+
+        <!-- Footer Area: Winners -->
+        <footer class="p-2 bg-secondary-dark/80 backdrop-blur-sm border-t border-gray-700">
+            <div class="bg-black bg-opacity-25 p-2 rounded-lg">
+                <div class="text-gold text-sm font-bold">Winners</div>
+                <div id="winners-list" class="text-light text-xs truncate">
+                    <span>Waiting for winners...</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- MOCK DATA & SETUP ---
+        const numberBoard = document.getElementById('number-board');
+        const currentNumberDisplay = document.getElementById('current-number-display');
+        const ticketsContainer = document.getElementById('tickets-container');
+        
+        let calledNumbers = new Set();
+        let gameInterval;
+
+        // Function to generate the number board (1-90)
+        function createBoard() {
+            for (let i = 1; i <= 90; i++) {
+                const cell = document.createElement('div');
+                cell.id = oard-num- + i;
+                cell.className = 'number-board-cell';
+                cell.innerText = i;
+                numberBoard.appendChild(cell);
+            }
+        }
+
+        // Function to generate a mock ticket
+        function createTicket(isHot = false) {
+            const ticket = document.createElement('div');
+            ticket.className = isHot ? 'ticket ticket-hot' : 'ticket';
+            // In a real app, ticket numbers would be generated properly.
+            // This is just for UI demonstration.
+            ticket.innerHTML = <div class="grid grid-cols-9 gap-1">
+                <div class="ticket-number dabbed">04</div><div class="ticket-number empty"></div><div class="ticket-number">23</div>
+                <div class="ticket-number empty"></div><div class="ticket-number">38</div><div class="ticket-number dabbed">45</div>
+                <div class="ticket-number empty"></div><div class="ticket-number">61</div><div class="ticket-number empty"></div>
+                <div class="ticket-number empty"></div><div class="ticket-number">13</div><div class="ticket-number empty"></div>
+                <div class="ticket-number dabbed">33</div><div class="ticket-number">48</div><div class="ticket-number empty"></div>
+                <div class="ticket-number">64</div><div class="ticket-number empty"></div><div class="ticket-number dabbed">84</div>
+                <div class="ticket-number">09</div><div class="ticket-number empty"></div><div class="ticket-number empty"></div>
+                <div class="ticket-number empty"></div><div class="ticket-number dabbed">55</div><div class="ticket-number">71</div>
+                <div class="ticket-number empty"></div><div class="ticket-number">88</div><div class="ticket-number">90</div>
+            </div>;
+            ticketsContainer.appendChild(ticket);
+        }
+
+        // --- GAME LOGIC SIMULATION ---
+        function callNextNumber() {
+            if (calledNumbers.size >= 90) {
+                clearInterval(gameInterval);
+                currentNumberDisplay.innerText = "END";
+                return;
+            }
+
+            let nextNumber;
+            do {
+                nextNumber = Math.floor(Math.random() * 90) + 1;
+            } while (calledNumbers.has(nextNumber));
+            
+            calledNumbers.add(nextNumber);
+
+            // Update UI
+            currentNumberDisplay.innerText = nextNumber;
+            const boardCell = document.getElementById(oard-num- + nextNumber);
+            if (boardCell) {
+                boardCell.classList.add('called');
+            }
+            // In a real app, we would also check tickets and dab them here.
+        }
+
+        // --- INITIALIZE GAME ---
+        window.onload = () => {
+            createBoard();
+            createTicket(true); // Create one "hot" ticket
+            createTicket();     // Create a regular ticket
+            createTicket();     // Create a regular ticket
+
+            // Start calling numbers every 3 seconds (simulates 210s game)
+            gameInterval = setInterval(callNextNumber, 3000);
+        };
+    </script>
+</body>
+</html>

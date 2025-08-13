@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tambola Game Screen - Gold Theme</title>
+    <title>Tambola Game Screen - Firestore</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -104,16 +104,32 @@
         </footer>
     </div>
 
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
     <script>
-        // --- MOCK DATA & SETUP ---
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyDz5rXqItBhZ1KcnP77brvJ47oZ0bUqYQU",
+          authDomain: "tambola-gold.firebaseapp.com",
+          projectId: "tambola-gold",
+          storageBucket: "tambola-gold.appspot.com",
+          messagingSenderId: "719738143899",
+          appId: "1:719738143899:web:538dc685a0127a233a723e"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // --- UI Element Selectors ---
         const numberBoard = document.getElementById('number-board');
         const currentNumberDisplay = document.getElementById('current-number-display');
         const ticketsContainer = document.getElementById('tickets-container');
         
-        let calledNumbers = new Set();
-        let gameInterval;
-
-        // Function to generate the number board (1-90)
+        // --- UI Generation ---
         function createBoard() {
             for (let i = 1; i <= 90; i++) {
                 const cell = document.createElement('div');
@@ -124,59 +140,65 @@
             }
         }
 
-        // Function to generate a mock ticket
         function createTicket(isHot = false) {
             const ticket = document.createElement('div');
             ticket.className = isHot ? 'ticket ticket-hot' : 'ticket';
-            // In a real app, ticket numbers would be generated properly.
-            // This is just for UI demonstration.
             ticket.innerHTML = <div class="grid grid-cols-9 gap-1">
-                <div class="ticket-number dabbed">04</div><div class="ticket-number empty"></div><div class="ticket-number">23</div>
-                <div class="ticket-number empty"></div><div class="ticket-number">38</div><div class="ticket-number dabbed">45</div>
-                <div class="ticket-number empty"></div><div class="ticket-number">61</div><div class="ticket-number empty"></div>
-                <div class="ticket-number empty"></div><div class="ticket-number">13</div><div class="ticket-number empty"></div>
-                <div class="ticket-number dabbed">33</div><div class="ticket-number">48</div><div class="ticket-number empty"></div>
-                <div class="ticket-number">64</div><div class="ticket-number empty"></div><div class="ticket-number dabbed">84</div>
-                <div class="ticket-number">09</div><div class="ticket-number empty"></div><div class="ticket-number empty"></div>
-                <div class="ticket-number empty"></div><div class="ticket-number dabbed">55</div><div class="ticket-number">71</div>
-                <div class="ticket-number empty"></div><div class="ticket-number">88</div><div class="ticket-number">90</div>
+                <div class="ticket-number" data-num="4">04</div><div class="ticket-number empty"></div><div class="ticket-number" data-num="23">23</div>
+                <div class="ticket-number empty"></div><div class="ticket-number" data-num="38">38</div><div class="ticket-number" data-num="45">45</div>
+                <div class="ticket-number empty"></div><div class="ticket-number" data-num="61">61</div><div class="ticket-number empty"></div>
+                <div class="ticket-number empty"></div><div class="ticket-number" data-num="13">13</div><div class="ticket-number empty"></div>
+                <div class="ticket-number" data-num="33">33</div><div class="ticket-number" data-num="48">48</div><div class="ticket-number empty"></div>
+                <div class="ticket-number" data-num="64">64</div><div class="ticket-number empty"></div><div class="ticket-number" data-num="84">84</div>
+                <div class="ticket-number" data-num="9">09</div><div class="ticket-number empty"></div><div class="ticket-number empty"></div>
+                <div class="ticket-number empty"></div><div class="ticket-number" data-num="55">55</div><div class="ticket-number" data-num="71">71</div>
+                <div class="ticket-number empty"></div><div class="ticket-number" data-num="88">88</div><div class="ticket-number" data-num="90">90</div>
             </div>;
             ticketsContainer.appendChild(ticket);
         }
 
-        // --- GAME LOGIC SIMULATION ---
-        function callNextNumber() {
-            if (calledNumbers.size >= 90) {
-                clearInterval(gameInterval);
-                currentNumberDisplay.innerText = "END";
-                return;
-            }
+        // --- REAL-TIME DATABASE LOGIC ---
+        const gameRef = db.collection('games').doc('currentGame');
 
-            let nextNumber;
-            do {
-                nextNumber = Math.floor(Math.random() * 90) + 1;
-            } while (calledNumbers.has(nextNumber));
-            
-            calledNumbers.add(nextNumber);
-
-            // Update UI
-            currentNumberDisplay.innerText = nextNumber;
-            const boardCell = document.getElementById(oard-num- + nextNumber);
-            if (boardCell) {
-                boardCell.classList.add('called');
+        gameRef.onSnapshot((doc) => {
+            if (doc.exists) {
+                const gameData = doc.data();
+                const calledNumbers = gameData.calledNumbers || [];
+                
+                if (calledNumbers.length > 0) {
+                    const lastNumber = calledNumbers[calledNumbers.length - 1];
+                    currentNumberDisplay.innerText = lastNumber;
+                    
+                    // Update the board and tickets
+                    updateUIWithCalledNumbers(calledNumbers);
+                }
+            } else {
+                console.log("No such game document!");
             }
-            // In a real app, we would also check tickets and dab them here.
+        });
+
+        function updateUIWithCalledNumbers(calledNumbers) {
+            // Reset board
+            for (let i = 1; i <= 90; i++) {
+                document.getElementById(oard-num- + i).classList.remove('called');
+            }
+            // Mark all called numbers on the board
+            calledNumbers.forEach(num => {
+                const boardCell = document.getElementById(oard-num- + num);
+                if (boardCell) boardCell.classList.add('called');
+                
+                // Dab numbers on all tickets
+                document.querySelectorAll(.ticket-number[data-num=' + num + ']).forEach(ticketNum => {
+                    ticketNum.classList.add('dabbed');
+                });
+            });
         }
 
-        // --- INITIALIZE GAME ---
+        // --- INITIALIZE UI ---
         window.onload = () => {
             createBoard();
-            createTicket(true); // Create one "hot" ticket
-            createTicket();     // Create a regular ticket
-            createTicket();     // Create a regular ticket
-
-            // Start calling numbers every 3 seconds (simulates 210s game)
-            gameInterval = setInterval(callNextNumber, 3000);
+            createTicket(true);
+            createTicket();
         };
     </script>
 </body>

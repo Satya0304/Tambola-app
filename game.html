@@ -144,37 +144,35 @@
         function generateTicketData() {
             let ticket = Array(3).fill(null).map(() => Array(9).fill(0));
             let ranges = [[1,9],[10,19],[20,29],[30,39],[40,49],[50,59],[60,69],[70,79],[80,90]];
-            let colCounts = Array(9).fill(0);
-            let nums = new Set();
             
-            for(let i=0; i<3; i++) {
-                let rowCount = 0;
-                while(rowCount < 5) {
-                    let col = Math.floor(Math.random() * 9);
-                    if(ticket[i][col] === 0 && colCounts[col] < 2) {
-                        let num;
-                        do {
-                           num = Math.floor(Math.random() * (ranges[col][1] - ranges[col][0] + 1)) + ranges[col][0];
-                        } while(nums.has(num));
-                        
-                        ticket[i][col] = num;
-                        nums.add(num);
-                        colCounts[col]++;
-                        rowCount++;
-                    }
+            for(let j=0; j<9; j++) {
+                let colNums = new Set();
+                let count = Math.random() > 0.5 ? 1 : 2;
+                if (j === 0 || j === 8) count = Math.random() > 0.3 ? 1 : 2; // Higher chance of 1 or 2 numbers in first/last col
+                while(colNums.size < count) {
+                    colNums.add(Math.floor(Math.random() * (ranges[j][1] - ranges[j][0] + 1)) + ranges[j][0]);
+                }
+                let sortedNums = Array.from(colNums).sort((a,b)=>a-b);
+                for(let i=0; i<sortedNums.length; i++) {
+                    ticket[i][j] = sortedNums[i];
                 }
             }
-            
-            // Sort columns
-            for(let j=0; j<9; j++) {
-                let colNums = [];
-                for(let i=0; i<3; i++) {
-                    if(ticket[i][j] !== 0) colNums.push(ticket[i][j]);
-                }
-                colNums.sort((a,b) => a-b);
-                let current = 0;
-                for(let i=0; i<3; i++) {
-                    if(ticket[i][j] !== 0) ticket[i][j] = colNums[current++];
+
+            for(let i=0; i<3; i++) {
+                let rowCount = ticket[i].filter(n => n > 0).length;
+                while(rowCount < 5) {
+                    let col;
+                    do {
+                        col = Math.floor(Math.random() * 9);
+                    } while(ticket[i][col] !== 0 || ticket.map(row=>row[col]).filter(n=>n>0).length >= 2);
+                    
+                    let num;
+                    do {
+                       num = Math.floor(Math.random() * (ranges[col][1] - ranges[col][0] + 1)) + ranges[col][0];
+                    } while(ticket.flat().includes(num));
+                    
+                    ticket[i][col] = num;
+                    rowCount++;
                 }
             }
             return ticket;
@@ -185,8 +183,8 @@
             ticketElement.className = isHot ? 'ticket ticket-hot' : 'ticket';
             
             let gridHtml = '<div class="grid grid-cols-9 gap-1">';
-            for(let i=0; i<3; i++) { // rows
-                for(let j=0; j<9; j++) { // columns
+            for(let i=0; i<3; i++) {
+                for(let j=0; j<9; j++) {
                     const number = ticketData[i][j];
                     if(number === 0) {
                         gridHtml += '<div class="ticket-number empty"></div>';
@@ -201,11 +199,10 @@
         }
 
         function updateUIWithCalledNumbers(calledNumbers) {
-            // This function is now safe to call anytime because the elements are guaranteed to exist.
             document.querySelectorAll('.number-board-cell').forEach(cell => cell.classList.remove('called'));
             
             calledNumbers.forEach(num => {
-                const boardCell = document.getElementById(oard-num- + num);
+                const boardCell = document.getElementById(oard-num-);
                 if (boardCell) boardCell.classList.add('called');
                 
                 document.querySelectorAll(.ticket-number[data-num='']).forEach(ticketNum => {
@@ -214,35 +211,45 @@
             });
         }
 
-        // --- CORRECTED INITIALIZATION ---
-        // This ensures all code runs only after the page is fully loaded.
+        // --- DEBUGGING INITIALIZATION ---
         window.onload = () => {
-            // 1. Create the static UI elements first
-            createBoard();
-            const ticket1 = generateTicketData();
-            renderTicket(ticket1, true); // Render one "hot" ticket
-            const ticket2 = generateTicketData();
-            renderTicket(ticket2);
+            try {
+                console.log("App loading...");
+                createBoard();
+                console.log("Board created successfully.");
 
-            // 2. Now, attach the real-time listener
-            const gameRef = db.collection('games').doc('currentGame');
-            gameRef.onSnapshot((doc) => {
-                if (doc.exists) {
-                    const gameData = doc.data();
-                    const calledNumbers = gameData.calledNumbers || [];
-                    
-                    if (calledNumbers.length > 0) {
-                        const lastNumber = calledNumbers[calledNumbers.length - 1];
-                        currentNumberDisplay.innerText = lastNumber;
-                    } else {
-                        currentNumberDisplay.innerText = '--';
+                const ticket1 = generateTicketData();
+                console.log("Ticket 1 data generated.");
+                renderTicket(ticket1, true);
+                console.log("Ticket 1 rendered successfully.");
+
+                const ticket2 = generateTicketData();
+                console.log("Ticket 2 data generated.");
+                renderTicket(ticket2);
+                console.log("Ticket 2 rendered successfully.");
+
+                const gameRef = db.collection('games').doc('currentGame');
+                gameRef.onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const gameData = doc.data();
+                        const calledNumbers = gameData.calledNumbers || [];
+                        
+                        if (calledNumbers.length > 0) {
+                            currentNumberDisplay.innerText = calledNumbers[calledNumbers.length - 1];
+                        } else {
+                            currentNumberDisplay.innerText = '--';
+                        }
+                        updateUIWithCalledNumbers(calledNumbers);
                     }
-                    // Update UI with the latest set of called numbers
-                    updateUIWithCalledNumbers(calledNumbers);
-                } else {
-                    console.log("No such game document! Waiting for game to start.");
-                }
-            });
+                }, (error) => {
+                    console.error("Firebase listener error:", error);
+                });
+                console.log("Firebase listener attached.");
+
+            } catch (error) {
+                console.error("A critical error occurred during initialization:", error);
+                alert("An error occurred. Please press F12 and check the Console for details.");
+            }
         };
     </script>
 </body>

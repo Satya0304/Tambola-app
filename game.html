@@ -140,57 +140,58 @@
             }
         }
         
-        // --- TICKET GENERATION LOGIC ---
+        // --- NEW, ROBUST TICKET GENERATION LOGIC ---
         function generateTicketData() {
-            let ticket = Array(3).fill(null).map(() => Array(9).fill(0));
-            let ranges = [[1,9],[10,19],[20,29],[30,39],[40,49],[50,59],[60,69],[70,79],[80,90]];
-            let placed_in_col = Array(9).fill(0);
-
-            for (let j = 0; j < 9; j++) {
-                let nums_in_col = new Set();
-                let count = (j === 0 || j === 8) ? (Math.random() > 0.3 ? 1 : 2) : (Math.random() > 0.5 ? 1 : 2);
-                while (nums_in_col.size < count) {
-                    nums_in_col.add(Math.floor(Math.random() * (ranges[j][1] - ranges[j][0] + 1)) + ranges[j][0]);
-                }
-                let sorted_nums = Array.from(nums_in_col).sort((a, b) => a - b);
-                for (let num of sorted_nums) {
-                    let row;
-                    do {
-                        row = Math.floor(Math.random() * 3);
-                    } while (ticket[row][j] !== 0);
-                    ticket[row][j] = num;
-                    placed_in_col[j]++;
-                }
+            const ticket = Array(3).fill(0).map(() => Array(9).fill(0));
+            const ranges = [[1, 9], [10, 19], [20, 29], [30, 39], [40, 49], [50, 59], [60, 69], [70, 79], [80, 90]];
+            
+            let numbers = new Set();
+            while (numbers.size < 15) {
+                const num = Math.floor(Math.random() * 90) + 1;
+                numbers.add(num);
             }
+            const sortedNumbers = Array.from(numbers).sort((a, b) => a - b);
 
             for (let i = 0; i < 3; i++) {
-                let nums_in_row = ticket[i].filter(n => n > 0).length;
-                while (nums_in_row < 5) {
+                for (let j = 0; j < 5; j++) {
+                    let numIndex;
                     let col;
-                    do {
-                        col = Math.floor(Math.random() * 9);
-                    } while (ticket[i][col] !== 0 || placed_in_col[col] >= 2);
-                    
                     let num;
                     do {
-                        num = Math.floor(Math.random() * (ranges[col][1] - ranges[col][0] + 1)) + ranges[col][0];
-                    } while (ticket.flat().includes(num));
+                        numIndex = Math.floor(Math.random() * sortedNumbers.length);
+                        num = sortedNumbers[numIndex];
+                        col = Math.floor((num - 1) / 10);
+                        if (col > 8) col = 8;
+                    } while (ticket[i][col] !== 0);
                     
                     ticket[i][col] = num;
-                    placed_in_col[col]++;
-                    nums_in_row++;
+                    sortedNumbers.splice(numIndex, 1);
                 }
             }
+            
+            // Sort columns vertically
+            for (let j = 0; j < 9; j++) {
+                let col = [ticket[0][j], ticket[1][j], ticket[2][j]];
+                let sortedCol = col.filter(n => n > 0).sort((a, b) => a - b);
+                let sortedIndex = 0;
+                for (let i = 0; i < 3; i++) {
+                    if (ticket[i][j] !== 0) {
+                        ticket[i][j] = sortedCol[sortedIndex++];
+                    }
+                }
+            }
+
             return ticket;
         }
+
 
         function renderTicket(ticketData, isHot = false) {
             const ticketElement = document.createElement('div');
             ticketElement.className = isHot ? 'ticket ticket-hot' : 'ticket';
             
             let gridHtml = '<div class="grid grid-cols-9 gap-1">';
-            for(let i=0; i<3; i++) {
-                for(let j=0; j<9; j++) {
+            for(let i=0; i<3; i++) { // rows
+                for(let j=0; j<9; j++) { // columns
                     const number = ticketData[i][j];
                     if(number === 0) {
                         gridHtml += '<div class="ticket-number empty"></div>';

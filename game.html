@@ -80,7 +80,7 @@
                 </div>
                 <!-- Number Board -->
                 <div id="number-board" class="grid grid-cols-10 gap-1 text-xs">
-                    <!-- Numbers 1-90 will be generated here by JavaScript -->
+                    <!-- Numbers 1-90 will be generated here -->
                 </div>
             </div>
         </header>
@@ -89,7 +89,7 @@
         <main class="flex-grow p-4 overflow-y-auto">
             <h2 class="text-gold font-bold mb-2">Your Tickets</h2>
             <div id="tickets-container" class="space-y-4">
-                <!-- Tickets will be generated and rendered here by JavaScript -->
+                <!-- Tickets will be rendered here -->
             </div>
         </main>
 
@@ -110,7 +110,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <script>
-        // Your web app's Firebase configuration
+        // Firebase Config
         const firebaseConfig = {
           apiKey: "AIzaSyDz5rXqItBhZ1KcnP77brvJ47oZ0bUqYQU",
           authDomain: "tambola-gold.firebaseapp.com",
@@ -120,27 +120,26 @@
           appId: "1:719738143899:web:538dc685a0127a233a723e"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // --- UI Element Selectors ---
+        // UI Elements
         const numberBoard = document.getElementById('number-board');
         const currentNumberDisplay = document.getElementById('current-number-display');
         const ticketsContainer = document.getElementById('tickets-container');
-        
-        // --- UI Generation ---
+
+        // Create Number Board
         function createBoard() {
             for (let i = 1; i <= 90; i++) {
                 const cell = document.createElement('div');
-                cell.id = oard-num- + i;
+                cell.id = 'board-num-' + i;
                 cell.className = 'number-board-cell';
                 cell.innerText = i;
                 numberBoard.appendChild(cell);
             }
         }
-        
-        // --- FINAL, ROBUST TICKET GENERATION LOGIC ---
+
+        // Generate Ticket
         function generateTicketData() {
             const ticket = Array(3).fill(0).map(() => Array(9).fill(0));
             const ranges = [[1, 9], [10, 19], [20, 29], [30, 39], [40, 49], [50, 59], [60, 69], [70, 79], [80, 90]];
@@ -164,10 +163,7 @@
                 }
             }
 
-            // This section was causing issues and is simplified.
-            // A standard ticket might not have a number in every column, this logic respects that.
-            
-            // Sort columns vertically
+            // Sort columns
             for (let j = 0; j < 9; j++) {
                 let colValues = [];
                 for (let i = 0; i < 3; i++) {
@@ -187,18 +183,19 @@
             return ticket;
         }
 
+        // Render Ticket
         function renderTicket(ticketData, isHot = false) {
             const ticketElement = document.createElement('div');
             ticketElement.className = isHot ? 'ticket ticket-hot' : 'ticket';
             
             let gridHtml = '<div class="grid grid-cols-9 gap-1">';
-            for(let i=0; i<3; i++) { // rows
-                for(let j=0; j<9; j++) { // columns
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 9; j++) {
                     const number = ticketData[i][j];
-                    if(number === 0) {
+                    if (number === 0) {
                         gridHtml += '<div class="ticket-number empty"></div>';
                     } else {
-                        gridHtml += <div class="ticket-number" data-num=""></div>;
+                        gridHtml += `<div class="ticket-number" data-num="${number}">${number}</div>`;
                     }
                 }
             }
@@ -207,26 +204,25 @@
             ticketsContainer.appendChild(ticketElement);
         }
 
+        // Update UI with called numbers
         function updateUIWithCalledNumbers(calledNumbers) {
             document.querySelectorAll('.number-board-cell').forEach(cell => cell.classList.remove('called'));
             
             calledNumbers.forEach(num => {
-                const boardCell = document.getElementById(oard-num-);
+                const boardCell = document.getElementById('board-num-' + num);
                 if (boardCell) boardCell.classList.add('called');
                 
-                document.querySelectorAll(.ticket-number[data-num='']).forEach(ticketNum => {
+                document.querySelectorAll(`.ticket-number[data-num='${num}']`).forEach(ticketNum => {
                     ticketNum.classList.add('dabbed');
                 });
             });
         }
 
-        // --- CORRECTED INITIALIZATION ---
+        // Init
         window.onload = () => {
             createBoard();
-            const ticket1 = generateTicketData();
-            renderTicket(ticket1, true);
-            const ticket2 = generateTicketData();
-            renderTicket(ticket2);
+            renderTicket(generateTicketData(), true);
+            renderTicket(generateTicketData());
 
             const gameRef = db.collection('games').doc('currentGame');
             gameRef.onSnapshot((doc) => {

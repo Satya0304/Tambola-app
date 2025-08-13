@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambola Home Screen - Gold Theme</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .bg-primary-dark { background-color: #121212; }
+        .bg-secondary-dark { background-color: #1E1E1E; }
+        .bg-accent-gold { background-color: #F9A825; }
+        .text-gold { color: #F9A825; }
+        .text-light { color: #E0E0E0; }
+        .text-white-full { color: #FFFFFF; }
+        .mobile-screen {
+            max-width: 414px;
+            height: 800px;
+            border: 16px solid #1E1E1E;
+            border-radius: 36px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body class="bg-gray-800 flex items-center justify-center h-screen">
+    <div class="mobile-screen bg-primary-dark">
+        <header class="bg-secondary-dark text-white-full p-4 flex justify-between items-center shadow-lg">
+            <div class="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gold" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+                <span class="font-semibold text-sm">@Player123</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-black bg-opacity-25 px-3 py-1 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gold" viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" /><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd" /></svg>
+                <span class="font-bold text-sm">?500</span>
+            </div>
+        </header>
+        <main class="flex-grow p-6 flex flex-col items-center justify-center space-y-8">
+            <div class="w-full bg-secondary-dark rounded-2xl shadow-lg p-6 text-center border border-gray-700">
+                <h1 class="text-gold font-bold text-2xl mb-4">Prize Pool</h1>
+                <div class="space-y-2 text-light text-left">
+                    <div class="flex justify-between items-center"><span>Jaldi 5:</span><span id="jaldi5-prize" class="font-bold text-white-full">?0</span></div>
+                    <div class="flex justify-between items-center"><span>Top Line:</span><span id="top-line-prize" class="font-bold text-white-full">?0</span></div>
+                    <div class="flex justify-between items-center"><span>Middle Line:</span><span id="middle-line-prize" class="font-bold text-white-full">?0</span></div>
+                    <div class="flex justify-between items-center"><span>Bottom Line:</span><span id="bottom-line-prize" class="font-bold text-white-full">?0</span></div>
+                    <div class="flex justify-between items-center"><span>Full House:</span><span id="full-house-prize" class="font-bold text-white-full">?0</span></div>
+                </div>
+            </div>
+            <div class="bg-accent-gold text-black font-bold text-xl w-full py-3 px-6 rounded-xl shadow-lg text-center">
+                Next Game In: 00:59
+            </div>
+        </main>
+        <footer class="p-4 bg-secondary-dark/80 backdrop-blur-sm border-t border-gray-700">
+            <div class="flex items-center justify-center space-x-4">
+                <button class="bg-gray-700 text-light font-bold py-3 px-6 rounded-xl shadow-md">Private Room</button>
+                <button class="bg-accent-gold text-black font-bold py-3 px-8 rounded-xl shadow-lg flex-grow">BUY TICKETS</button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // This function calculates and displays the prize money.
+        function updatePrizePool() {
+            // --- Configuration ---
+            const ticketPrice = 10;
+            // In a real app, this number would come from the server.
+            // We'll simulate it here for now.
+            const ticketsSold = 1250; 
+
+            const prizeDistribution = {
+                fullHouse: 0.50, // 50% of the prize pool
+                topLine: 0.15,   // 15%
+                middleLine: 0.15,// 15%
+                bottomLine: 0.15,// 15%
+                jaldi5: 0.05     // 5%
+            };
+            
+            // --- Calculations ---
+            const totalCollection = ticketsSold * ticketPrice;
+            const totalPrizePool = totalCollection * 0.80; // 80% is distributed
+
+            // Calculate individual prizes
+            const fullHousePrize = totalPrizePool * prizeDistribution.fullHouse;
+            const topLinePrize = totalPrizePool * prizeDistribution.topLine;
+            const middleLinePrize = totalPrizePool * prizeDistribution.middleLine;
+            const bottomLinePrize = totalPrizePool * prizeDistribution.bottomLine;
+            const jaldi5Prize = totalPrizePool * prizeDistribution.jaldi5;
+
+            // --- Update UI ---
+            // Using toLocaleString for nice formatting (e.g., 10,000)
+            document.getElementById('full-house-prize').innerText = '?' + fullHousePrize.toLocaleString();
+            document.getElementById('top-line-prize').innerText = '?' + topLinePrize.toLocaleString();
+            document.getElementById('middle-line-prize').innerText = '?' + middleLinePrize.toLocaleString();
+            document.getElementById('bottom-line-prize').innerText = '?' + bottomLinePrize.toLocaleString();
+            document.getElementById('jaldi5-prize').innerText = '?' + jaldi5Prize.toLocaleString();
+        }
+
+        // Run the function when the page loads
+        window.onload = updatePrizePool;
+    </script>
+</body>
+</html>

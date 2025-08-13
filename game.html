@@ -144,35 +144,41 @@
         function generateTicketData() {
             let ticket = Array(3).fill(null).map(() => Array(9).fill(0));
             let ranges = [[1,9],[10,19],[20,29],[30,39],[40,49],[50,59],[60,69],[70,79],[80,90]];
-            
-            for(let j=0; j<9; j++) {
-                let colNums = new Set();
-                let count = Math.random() > 0.5 ? 1 : 2;
-                if (j === 0 || j === 8) count = Math.random() > 0.3 ? 1 : 2; // Higher chance of 1 or 2 numbers in first/last col
-                while(colNums.size < count) {
-                    colNums.add(Math.floor(Math.random() * (ranges[j][1] - ranges[j][0] + 1)) + ranges[j][0]);
+            let placed_in_col = Array(9).fill(0);
+
+            for (let j = 0; j < 9; j++) {
+                let nums_in_col = new Set();
+                let count = (j === 0 || j === 8) ? (Math.random() > 0.3 ? 1 : 2) : (Math.random() > 0.5 ? 1 : 2);
+                while (nums_in_col.size < count) {
+                    nums_in_col.add(Math.floor(Math.random() * (ranges[j][1] - ranges[j][0] + 1)) + ranges[j][0]);
                 }
-                let sortedNums = Array.from(colNums).sort((a,b)=>a-b);
-                for(let i=0; i<sortedNums.length; i++) {
-                    ticket[i][j] = sortedNums[i];
+                let sorted_nums = Array.from(nums_in_col).sort((a, b) => a - b);
+                for (let num of sorted_nums) {
+                    let row;
+                    do {
+                        row = Math.floor(Math.random() * 3);
+                    } while (ticket[row][j] !== 0);
+                    ticket[row][j] = num;
+                    placed_in_col[j]++;
                 }
             }
 
-            for(let i=0; i<3; i++) {
-                let rowCount = ticket[i].filter(n => n > 0).length;
-                while(rowCount < 5) {
+            for (let i = 0; i < 3; i++) {
+                let nums_in_row = ticket[i].filter(n => n > 0).length;
+                while (nums_in_row < 5) {
                     let col;
                     do {
                         col = Math.floor(Math.random() * 9);
-                    } while(ticket[i][col] !== 0 || ticket.map(row=>row[col]).filter(n=>n>0).length >= 2);
+                    } while (ticket[i][col] !== 0 || placed_in_col[col] >= 2);
                     
                     let num;
                     do {
-                       num = Math.floor(Math.random() * (ranges[col][1] - ranges[col][0] + 1)) + ranges[col][0];
-                    } while(ticket.flat().includes(num));
+                        num = Math.floor(Math.random() * (ranges[col][1] - ranges[col][0] + 1)) + ranges[col][0];
+                    } while (ticket.flat().includes(num));
                     
                     ticket[i][col] = num;
-                    rowCount++;
+                    placed_in_col[col]++;
+                    nums_in_row++;
                 }
             }
             return ticket;
@@ -211,45 +217,28 @@
             });
         }
 
-        // --- DEBUGGING INITIALIZATION ---
+        // --- CORRECTED INITIALIZATION ---
         window.onload = () => {
-            try {
-                console.log("App loading...");
-                createBoard();
-                console.log("Board created successfully.");
+            createBoard();
+            const ticket1 = generateTicketData();
+            renderTicket(ticket1, true);
+            const ticket2 = generateTicketData();
+            renderTicket(ticket2);
 
-                const ticket1 = generateTicketData();
-                console.log("Ticket 1 data generated.");
-                renderTicket(ticket1, true);
-                console.log("Ticket 1 rendered successfully.");
-
-                const ticket2 = generateTicketData();
-                console.log("Ticket 2 data generated.");
-                renderTicket(ticket2);
-                console.log("Ticket 2 rendered successfully.");
-
-                const gameRef = db.collection('games').doc('currentGame');
-                gameRef.onSnapshot((doc) => {
-                    if (doc.exists) {
-                        const gameData = doc.data();
-                        const calledNumbers = gameData.calledNumbers || [];
-                        
-                        if (calledNumbers.length > 0) {
-                            currentNumberDisplay.innerText = calledNumbers[calledNumbers.length - 1];
-                        } else {
-                            currentNumberDisplay.innerText = '--';
-                        }
-                        updateUIWithCalledNumbers(calledNumbers);
+            const gameRef = db.collection('games').doc('currentGame');
+            gameRef.onSnapshot((doc) => {
+                if (doc.exists) {
+                    const gameData = doc.data();
+                    const calledNumbers = gameData.calledNumbers || [];
+                    
+                    if (calledNumbers.length > 0) {
+                        currentNumberDisplay.innerText = calledNumbers[calledNumbers.length - 1];
+                    } else {
+                        currentNumberDisplay.innerText = '--';
                     }
-                }, (error) => {
-                    console.error("Firebase listener error:", error);
-                });
-                console.log("Firebase listener attached.");
-
-            } catch (error) {
-                console.error("A critical error occurred during initialization:", error);
-                alert("An error occurred. Please press F12 and check the Console for details.");
-            }
+                    updateUIWithCalledNumbers(calledNumbers);
+                }
+            });
         };
     </script>
 </body>

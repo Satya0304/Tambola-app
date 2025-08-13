@@ -89,7 +89,7 @@
         <main class="flex-grow p-4 overflow-y-auto">
             <h2 class="text-gold font-bold mb-2">Your Tickets</h2>
             <div id="tickets-container" class="space-y-4">
-                <!-- Tickets will be generated here by JavaScript -->
+                <!-- Tickets will be generated and rendered here by JavaScript -->
             </div>
         </main>
 
@@ -139,27 +139,69 @@
                 numberBoard.appendChild(cell);
             }
         }
+        
+        // --- TICKET GENERATION LOGIC ---
+        function generateTicketData() {
+            let ticket = Array(3).fill(null).map(() => Array(9).fill(0));
+            let ranges = [[1,9],[10,19],[20,29],[30,39],[40,49],[50,59],[60,69],[70,79],[80,90]];
+            let colCounts = Array(9).fill(0);
+            let nums = new Set();
+            
+            for(let i=0; i<3; i++) {
+                let rowCount = 0;
+                while(rowCount < 5) {
+                    let col = Math.floor(Math.random() * 9);
+                    if(ticket[i][col] === 0 && colCounts[col] < 2) {
+                        let num;
+                        do {
+                           num = Math.floor(Math.random() * (ranges[col][1] - ranges[col][0] + 1)) + ranges[col][0];
+                        } while(nums.has(num));
+                        
+                        ticket[i][col] = num;
+                        nums.add(num);
+                        colCounts[col]++;
+                        rowCount++;
+                    }
+                }
+            }
+            
+            // Sort columns
+            for(let j=0; j<9; j++) {
+                let colNums = [];
+                for(let i=0; i<3; i++) {
+                    if(ticket[i][j] !== 0) colNums.push(ticket[i][j]);
+                }
+                colNums.sort((a,b) => a-b);
+                let current = 0;
+                for(let i=0; i<3; i++) {
+                    if(ticket[i][j] !== 0) ticket[i][j] = colNums[current++];
+                }
+            }
+            return ticket;
+        }
 
-        function createTicket(isHot = false) {
-            const ticket = document.createElement('div');
-            ticket.className = isHot ? 'ticket ticket-hot' : 'ticket';
-            ticket.innerHTML = <div class="grid grid-cols-9 gap-1">
-                <div class="ticket-number" data-num="4">04</div><div class="ticket-number empty"></div><div class="ticket-number" data-num="23">23</div>
-                <div class="ticket-number empty"></div><div class="ticket-number" data-num="38">38</div><div class="ticket-number" data-num="45">45</div>
-                <div class="ticket-number empty"></div><div class="ticket-number" data-num="61">61</div><div class="ticket-number empty"></div>
-                <div class="ticket-number empty"></div><div class="ticket-number" data-num="13">13</div><div class="ticket-number empty"></div>
-                <div class="ticket-number" data-num="33">33</div><div class="ticket-number" data-num="48">48</div><div class="ticket-number empty"></div>
-                <div class="ticket-number" data-num="64">64</div><div class="ticket-number empty"></div><div class="ticket-number" data-num="84">84</div>
-                <div class="ticket-number" data-num="9">09</div><div class="ticket-number empty"></div><div class="ticket-number empty"></div>
-                <div class="ticket-number empty"></div><div class="ticket-number" data-num="55">55</div><div class="ticket-number" data-num="71">71</div>
-                <div class="ticket-number empty"></div><div class="ticket-number" data-num="88">88</div><div class="ticket-number" data-num="90">90</div>
-            </div>;
-            ticketsContainer.appendChild(ticket);
+        function renderTicket(ticketData, isHot = false) {
+            const ticketElement = document.createElement('div');
+            ticketElement.className = isHot ? 'ticket ticket-hot' : 'ticket';
+            
+            let gridHtml = '<div class="grid grid-cols-9 gap-1">';
+            for(let i=0; i<3; i++) { // rows
+                for(let j=0; j<9; j++) { // columns
+                    const number = ticketData[i][j];
+                    if(number === 0) {
+                        gridHtml += '<div class="ticket-number empty"></div>';
+                    } else {
+                        gridHtml += <div class="ticket-number" data-num=""></div>;
+                    }
+                }
+            }
+            gridHtml += '</div>';
+            ticketElement.innerHTML = gridHtml;
+            ticketsContainer.appendChild(ticketElement);
         }
 
         // --- REAL-TIME DATABASE LOGIC ---
         const gameRef = db.collection('games').doc('currentGame');
-
         gameRef.onSnapshot((doc) => {
             if (doc.exists) {
                 const gameData = doc.data();
@@ -168,8 +210,6 @@
                 if (calledNumbers.length > 0) {
                     const lastNumber = calledNumbers[calledNumbers.length - 1];
                     currentNumberDisplay.innerText = lastNumber;
-                    
-                    // Update the board and tickets
                     updateUIWithCalledNumbers(calledNumbers);
                 }
             } else {
@@ -178,17 +218,14 @@
         });
 
         function updateUIWithCalledNumbers(calledNumbers) {
-            // Reset board
             for (let i = 1; i <= 90; i++) {
                 document.getElementById(oard-num- + i).classList.remove('called');
             }
-            // Mark all called numbers on the board
             calledNumbers.forEach(num => {
                 const boardCell = document.getElementById(oard-num- + num);
                 if (boardCell) boardCell.classList.add('called');
                 
-                // Dab numbers on all tickets
-                document.querySelectorAll(.ticket-number[data-num=' + num + ']).forEach(ticketNum => {
+                document.querySelectorAll(.ticket-number[data-num='']).forEach(ticketNum => {
                     ticketNum.classList.add('dabbed');
                 });
             });
@@ -197,8 +234,10 @@
         // --- INITIALIZE UI ---
         window.onload = () => {
             createBoard();
-            createTicket(true);
-            createTicket();
+            const ticket1 = generateTicketData();
+            renderTicket(ticket1, true); // Render one "hot" ticket
+            const ticket2 = generateTicketData();
+            renderTicket(ticket2);
         };
     </script>
 </body>

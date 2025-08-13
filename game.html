@@ -201,12 +201,9 @@
         }
 
         function updateUIWithCalledNumbers(calledNumbers) {
-            for (let i = 1; i <= 90; i++) {
-                const boardCell = document.getElementById(oard-num- + i);
-                if (boardCell) {
-                   boardCell.classList.remove('called');
-                }
-            }
+            // This function is now safe to call anytime because the elements are guaranteed to exist.
+            document.querySelectorAll('.number-board-cell').forEach(cell => cell.classList.remove('called'));
+            
             calledNumbers.forEach(num => {
                 const boardCell = document.getElementById(oard-num- + num);
                 if (boardCell) boardCell.classList.add('called');
@@ -217,8 +214,9 @@
             });
         }
 
-        // --- INITIALIZE THE APP ---
-        function initializeApp() {
+        // --- CORRECTED INITIALIZATION ---
+        // This ensures all code runs only after the page is fully loaded.
+        window.onload = () => {
             // 1. Create the static UI elements first
             createBoard();
             const ticket1 = generateTicketData();
@@ -236,21 +234,16 @@
                     if (calledNumbers.length > 0) {
                         const lastNumber = calledNumbers[calledNumbers.length - 1];
                         currentNumberDisplay.innerText = lastNumber;
-                        updateUIWithCalledNumbers(calledNumbers);
                     } else {
-                        // Handle case where game is reset
                         currentNumberDisplay.innerText = '--';
-                        updateUIWithCalledNumbers([]);
                     }
+                    // Update UI with the latest set of called numbers
+                    updateUIWithCalledNumbers(calledNumbers);
                 } else {
                     console.log("No such game document! Waiting for game to start.");
                 }
             });
-        }
-
-        // Run the app initialization
-        initializeApp();
-
+        };
     </script>
 </body>
 </html>

@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tambola Login Screen - Gold Theme</title>
+    <title>Tambola Login - Firebase</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', sans-serif; }
@@ -14,17 +12,8 @@
         .bg-secondary-dark { background-color: #1E1E1E; }
         .bg-accent-gold { background-color: #F9A825; }
         .text-gold { color: #F9A825; }
-        .border-gold { border-color: #F9A825; }
         .text-light { color: #E0E0E0; }
-        .text-white-full { color: #FFFFFF; }
-        .mobile-screen {
-            max-width: 414px;
-            height: 800px;
-            border: 16px solid #1E1E1E;
-            border-radius: 36px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
+        .mobile-screen { max-width: 414px; height: 800px; border: 16px solid #1E1E1E; border-radius: 36px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); overflow: hidden; }
     </style>
 </head>
 <body class="bg-gray-800 flex items-center justify-center h-screen">
@@ -33,36 +22,112 @@
             <h1 class="text-gold font-bold text-4xl text-center">TAMBOLA GOLD</h1>
             <div id="phone-view">
                 <label for="phone" class="text-light text-sm font-semibold mb-2 block">Enter Mobile Number</label>
-                <input type="tel" id="phone" name="phone" class="w-full bg-secondary-dark rounded-lg p-3 border border-gray-700 focus:border-gold focus:outline-none" placeholder="10-digit mobile number" maxlength="10">
+                <div class="flex items-center bg-secondary-dark rounded-lg border border-gray-700">
+                    <span class="px-3 text-light">+91</span>
+                    <input type="tel" id="phone" class="w-full bg-transparent p-3 focus:outline-none" placeholder="10-digit number" maxlength="10">
+                </div>
                 <button id="send-otp-btn" class="w-full bg-accent-gold text-black font-bold py-3 rounded-lg mt-4 shadow-lg">Get OTP</button>
             </div>
             <div id="otp-view" class="hidden">
                  <label for="otp" class="text-light text-sm font-semibold mb-2 block">Enter OTP</label>
-                 <input type="tel" id="otp" name="otp" class="w-full bg-secondary-dark rounded-lg p-3 border border-gray-700 focus:border-gold focus:outline-none" placeholder="6-digit OTP" maxlength="6">
+                 <input type="tel" id="otp" class="w-full bg-secondary-dark rounded-lg p-3 border border-gray-700 focus:outline-none" placeholder="6-digit OTP" maxlength="6">
                  <button id="verify-otp-btn" class="w-full bg-accent-gold text-black font-bold py-3 rounded-lg mt-4 shadow-lg">Verify OTP</button>
             </div>
-            <button class="text-gold text-center w-full underline mt-4">Play as Guest</button>
+            <div id="recaptcha-container" style="margin-top: 20px;"></div>
         </main>
     </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
     <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyDz5rXqItBhZ1KcnP77brvJ47oZ0bUqYQU",
+          authDomain: "tambola-gold.firebaseapp.com",
+          projectId: "tambola-gold",
+          storageBucket: "tambola-gold.appspot.com",
+          messagingSenderId: "719738143899",
+          appId: "1:719738143899:web:538dc685a0127a233a723e"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // --- Element Selectors ---
         const phoneView = document.getElementById('phone-view');
         const otpView = document.getElementById('otp-view');
         const sendOtpBtn = document.getElementById('send-otp-btn');
         const verifyOtpBtn = document.getElementById('verify-otp-btn');
+        const phoneInput = document.getElementById('phone');
+        const otpInput = document.getElementById('otp');
+
+        // --- Firebase Logic ---
+        window.onload = function() {
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+              'size': 'invisible',
+              'callback': (response) => { console.log("reCAPTCHA solved"); }
+            });
+            recaptchaVerifier.render();
+        };
+
         sendOtpBtn.addEventListener('click', () => {
-            alert('A mock OTP has been sent. Use 123456.');
-            phoneView.classList.add('hidden');
-            otpView.classList.remove('hidden');
+            const phoneNumber = "+91" + phoneInput.value;
+            const appVerifier = window.recaptchaVerifier;
+            
+            auth.signInWithPhoneNumber(phoneNumber, appVerifier)
+                .then((confirmationResult) => {
+                  window.confirmationResult = confirmationResult;
+                  alert('OTP has been sent to your phone!');
+                  phoneView.classList.add('hidden');
+                  otpView.classList.remove('hidden');
+                }).catch((error) => {
+                  console.error("Error sending OTP:", error);
+                  alert("Error sending OTP. Check the console for details.");
+                  grecaptcha.reset(window.recaptchaVerifier.widgetId);
+                });
         });
+
         verifyOtpBtn.addEventListener('click', () => {
-            const otpInput = document.getElementById('otp').value;
-            if (otpInput === '123456') {
-                alert('Success! You are now logged in.');
-            } else {
-                alert('Incorrect OTP. Please try again.');
-            }
+            const code = otpInput.value;
+            window.confirmationResult.confirm(code).then(async (result) => {
+              const user = result.user;
+              console.log("User signed in successfully:", user.uid);
+              
+              // Create a user profile and wallet if it's their first time
+              await createUserProfile(user);
+
+              alert("Success! You are now logged in.");
+              window.location.href = 'home.html';
+
+            }).catch((error) => {
+              console.error("Error verifying OTP:", error);
+              alert("Incorrect OTP. Please try again.");
+            });
         });
+
+        // --- NEW FUNCTION: Create User Profile & Wallet ---
+        async function createUserProfile(user) {
+            const userRef = db.collection('users').doc(user.uid);
+            const doc = await userRef.get();
+
+            if (!doc.exists) {
+                // This is a new user
+                console.log("Creating new user profile for:", user.uid);
+                await userRef.set({
+                    phoneNumber: user.phoneNumber,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    username: Player + user.uid.substring(0, 4),
+                    wallet: 0 // Starting balance is now 0
+                });
+            } else {
+                console.log("Welcome back, existing user:", user.uid);
+            }
+        }
     </script>
 </body>
 </html>
-

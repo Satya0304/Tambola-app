@@ -200,26 +200,12 @@
             ticketsContainer.appendChild(ticketElement);
         }
 
-        // --- REAL-TIME DATABASE LOGIC ---
-        const gameRef = db.collection('games').doc('currentGame');
-        gameRef.onSnapshot((doc) => {
-            if (doc.exists) {
-                const gameData = doc.data();
-                const calledNumbers = gameData.calledNumbers || [];
-                
-                if (calledNumbers.length > 0) {
-                    const lastNumber = calledNumbers[calledNumbers.length - 1];
-                    currentNumberDisplay.innerText = lastNumber;
-                    updateUIWithCalledNumbers(calledNumbers);
-                }
-            } else {
-                console.log("No such game document!");
-            }
-        });
-
         function updateUIWithCalledNumbers(calledNumbers) {
             for (let i = 1; i <= 90; i++) {
-                document.getElementById(oard-num- + i).classList.remove('called');
+                const boardCell = document.getElementById(oard-num- + i);
+                if (boardCell) {
+                   boardCell.classList.remove('called');
+                }
             }
             calledNumbers.forEach(num => {
                 const boardCell = document.getElementById(oard-num- + num);
@@ -231,14 +217,40 @@
             });
         }
 
-        // --- INITIALIZE UI ---
-        window.onload = () => {
+        // --- INITIALIZE THE APP ---
+        function initializeApp() {
+            // 1. Create the static UI elements first
             createBoard();
             const ticket1 = generateTicketData();
             renderTicket(ticket1, true); // Render one "hot" ticket
             const ticket2 = generateTicketData();
             renderTicket(ticket2);
-        };
+
+            // 2. Now, attach the real-time listener
+            const gameRef = db.collection('games').doc('currentGame');
+            gameRef.onSnapshot((doc) => {
+                if (doc.exists) {
+                    const gameData = doc.data();
+                    const calledNumbers = gameData.calledNumbers || [];
+                    
+                    if (calledNumbers.length > 0) {
+                        const lastNumber = calledNumbers[calledNumbers.length - 1];
+                        currentNumberDisplay.innerText = lastNumber;
+                        updateUIWithCalledNumbers(calledNumbers);
+                    } else {
+                        // Handle case where game is reset
+                        currentNumberDisplay.innerText = '--';
+                        updateUIWithCalledNumbers([]);
+                    }
+                } else {
+                    console.log("No such game document! Waiting for game to start.");
+                }
+            });
+        }
+
+        // Run the app initialization
+        initializeApp();
+
     </script>
 </body>
 </html>

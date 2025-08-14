@@ -58,7 +58,7 @@
           apiKey: "AIzaSyDz5rXqItBhZ1KcnP77brvJ47oZ0bUqYQU",
           authDomain: "tambola-gold.firebaseapp.com",
           projectId: "tambola-gold",
-          storageBucket: "tambola-gold.firebasestorage.app",
+          storageBucket: "tambola-gold.appspot.com",
           messagingSenderId: "719738143899",
           appId: "1:719738143899:web:538dc685a0127a233a723e"
         };
@@ -125,7 +125,7 @@
                 await userRef.set({
                     phoneNumber: user.phoneNumber,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    username: Player + user.uid.substring(0, 4),
+                    username: Player, // Corrected this line
                     wallet: 0
                 });
             }

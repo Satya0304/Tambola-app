@@ -1,135 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tambola Login Screen - Gold Theme</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Poppins', sans-serif; }
-        .bg-primary-dark { background-color: #121212; }
-        .bg-secondary-dark { background-color: #1E1E1E; }
-        .bg-accent-gold { background-color: #F9A825; }
-        .text-gold { color: #F9A825; }
-        .border-gold { border-color: #F9A825; }
-        .text-light { color: #E0E0E0; }
-        .text-white-full { color: #FFFFFF; }
-        .mobile-screen {
-            max-width: 414px;
-            height: 800px;
-            border: 16px solid #1E1E1E;
-            border-radius: 36px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tambola Login Screen - Gold Theme</title>
+  <!-- Tailwind CSS for development; replace with built build in production -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Poppins', sans-serif; }
+    .bg-primary-dark { background-color: #121212; }
+    .bg-secondary-dark { background-color: #1E1E1E; }
+    .bg-accent-gold { background-color: #F9A825; }
+    .text-gold { color: #F9A825; }
+    .border-gold { border-color: #F9A825; }
+    .text-light { color: #E0E0E0; }
+    .text-white-full { color: #FFFFFF; }
+    .mobile-screen {
+      max-width: 414px;
+      height: 800px;
+      border: 16px solid #1E1E1E;
+      border-radius: 36px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+  </style>
 </head>
 <body class="bg-gray-800 flex items-center justify-center h-screen">
-    <div class="mobile-screen bg-primary-dark flex flex-col text-white-full">
-        <main class="flex-grow flex flex-col justify-center p-6 space-y-8">
-            <h1 class="text-gold font-bold text-4xl text-center">TAMBOLA GOLD</h1>
-            <div id="phone-view">
-                <label for="phone" class="text-light text-sm font-semibold mb-2 block">Enter Mobile Number</label>
-                <input type="tel" id="phone" name="phone" class="w-full bg-secondary-dark rounded-lg p-3 border border-gray-700 focus:border-gold focus:outline-none" placeholder="10-digit mobile number" maxlength="10">
-                <button id="send-otp-btn" class="w-full bg-accent-gold text-black font-bold py-3 rounded-lg mt-4 shadow-lg">Get OTP</button>
-            </div>
-            <div id="otp-view" class="hidden">
-                 <label for="otp" class="text-light text-sm font-semibold mb-2 block">Enter OTP</label>
-                 <input type="tel" id="otp" name="otp" class="w-full bg-secondary-dark rounded-lg p-3 border border-gray-700 focus:border-gold focus:outline-none" placeholder="6-digit OTP" maxlength="6">
-                 <button id="verify-otp-btn" class="w-full bg-accent-gold text-black font-bold py-3 rounded-lg mt-4 shadow-lg">Verify OTP</button>
-            </div>
-            <button class="text-gold text-center w-full underline mt-4">Play as Guest</button>
-            <!-- This container is required for reCAPTCHA -->
-            <div id="recaptcha-container"></div>
-        </main>
-    </div>
+  <div class="mobile-screen bg-primary-dark flex flex-col text-white-full">
+    <main class="flex-grow flex flex-col justify-center p-6 space-y-8">
+      <h1 class="text-gold font-bold text-4xl text-center">TAMBOLA GOLD</h1>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+      <!-- Phone input -->
+      <div id="phone-view">
+        <label for="phone" class="text-light text-sm font-semibold mb-2 block">Enter Mobile Number</label>
+        <input type="tel" id="phone" name="phone"
+               class="w-full bg-secondary-dark rounded-lg p-3 border border-gray-700 focus:border-gold focus:outline-none"
+               placeholder="10-digit mobile number" maxlength="10"/>
+        <button id="send-otp-btn"
+                class="w-full bg-accent-gold text-black font-bold py-3 rounded-lg mt-4 shadow-lg">
+          Get OTP
+        </button>
+      </div>
 
-    <script>
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-          apiKey: "AIzaSyDz5rXqItBhZ1KcnP77brvJ47oZ0bUqYQU",
-          authDomain: "tambola-gold.firebaseapp.com",
-          projectId: "tambola-gold",
-          storageBucket: "tambola-gold.appspot.com",
-          messagingSenderId: "719738143899",
-          appId: "1:719738143899:web:538dc685a0127a233a723e"
-        };
+      <!-- OTP input -->
+      <div id="otp-view" class="hidden">
+        <label for="otp" class="text-light text-sm font-semibold mb-2 block">Enter OTP</label>
+        <input type="tel" id="otp" name="otp"
+               class="w-full bg-secondary-dark rounded-lg p-3 border border-gray-700 focus:border-gold focus:outline-none"
+               placeholder="6-digit OTP" maxlength="6"/>
+        <button id="verify-otp-btn"
+                class="w-full bg-accent-gold text-black font-bold py-3 rounded-lg mt-4 shadow-lg">
+          Verify OTP
+        </button>
+      </div>
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+      <button class="text-gold text-center w-full underline mt-4">Play as Guest</button>
+      <div id="recaptcha-container"></div>
+    </main>
+  </div>
 
-        // --- Element Selectors ---
-        const phoneView = document.getElementById('phone-view');
-        const otpView = document.getElementById('otp-view');
-        const sendOtpBtn = document.getElementById('send-otp-btn');
-        const verifyOtpBtn = document.getElementById('verify-otp-btn');
-        const phoneInput = document.getElementById('phone');
-        const otpInput = document.getElementById('otp');
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-        // --- Firebase Logic ---
-        window.onload = function() {
-            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-              'size': 'invisible',
-              'callback': (response) => { console.log("reCAPTCHA solved"); }
-            });
-            recaptchaVerifier.render();
-        };
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDz5rXqItBhZ1KcnP77brvJ47oZ0bUqYQU",
+      authDomain: "tambola-gold.firebaseapp.com",
+      projectId: "tambola-gold",
+      storageBucket: "tambola-gold.appspot.com",
+      messagingSenderId: "719738143899",
+      appId: "1:719738143899:web:538dc685a0127a233a723e"
+    };
 
-        sendOtpBtn.addEventListener('click', () => {
-            const phoneNumber = "+91" + phoneInput.value;
-            const appVerifier = window.recaptchaVerifier;
-            
-            auth.signInWithPhoneNumber(phoneNumber, appVerifier)
-                .then((confirmationResult) => {
-                  window.confirmationResult = confirmationResult;
-                  alert('OTP has been sent to your phone!');
-                  phoneView.classList.add('hidden');
-                  otpView.classList.remove('hidden');
-                }).catch((error) => {
-                  console.error("Error sending OTP:", error);
-                  alert("Error sending OTP. Check the console for details.");
-                  // Reset reCAPTCHA on error
-                  window.recaptchaVerifier.render().then(function(widgetId) {
-                    grecaptcha.reset(widgetId);
-                  });
-                });
+    // Init Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Elements
+    const phoneView = document.getElementById('phone-view');
+    const otpView = document.getElementById('otp-view');
+    const sendOtpBtn = document.getElementById('send-otp-btn');
+    const verifyOtpBtn = document.getElementById('verify-otp-btn');
+    const phoneInput = document.getElementById('phone');
+    const otpInput = document.getElementById('otp');
+
+    // reCAPTCHA setup
+    window.onload = function() {
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'invisible',
+        callback: () => console.log("reCAPTCHA solved")
+      });
+      recaptchaVerifier.render();
+    };
+
+    // Send OTP
+    sendOtpBtn.addEventListener('click', () => {
+      let phoneNumber = "+91" + phoneInput.value;
+
+      // ? Development mode test number
+      if (location.hostname === "localhost" || location.hostname.includes("127.0.0.1")) {
+        phoneNumber = "+15555550123"; // Add this number in Firebase test phone numbers
+        alert("Using test number: " + phoneNumber + "\nOTP: 123456");
+      }
+
+      const appVerifier = window.recaptchaVerifier;
+      auth.signInWithPhoneNumber(phoneNumber, appVerifier)
+        .then((confirmationResult) => {
+          window.confirmationResult = confirmationResult;
+          alert('OTP has been sent!');
+          phoneView.classList.add('hidden');
+          otpView.classList.remove('hidden');
+        })
+        .catch((error) => {
+          console.error("Error sending OTP:", error);
+          alert("Error sending OTP: " + error.message);
+          window.recaptchaVerifier.render().then(widgetId => {
+            grecaptcha.reset(widgetId);
+          });
         });
+    });
 
-        verifyOtpBtn.addEventListener('click', () => {
-            const code = otpInput.value;
-            window.confirmationResult.confirm(code).then(async (result) => {
-              const user = result.user;
-              await createUserProfile(user);
-              alert("Success! You are now logged in.");
-              window.location.href = 'home.html';
-            }).catch((error) => {
-              console.error("Error verifying OTP:", error);
-              alert("Incorrect OTP. Please try again.");
-            });
+    // Verify OTP
+    verifyOtpBtn.addEventListener('click', () => {
+      const code = otpInput.value;
+      window.confirmationResult.confirm(code)
+        .then(async (result) => {
+          const user = result.user;
+          await createUserProfile(user);
+          alert("Success! You are now logged in.");
+          window.location.href = 'home.html';
+        })
+        .catch((error) => {
+          console.error("Error verifying OTP:", error);
+          alert("Incorrect OTP. Please try again.");
         });
+    });
 
-        async function createUserProfile(user) {
-            const userRef = db.collection('users').doc(user.uid);
-            const doc = await userRef.get();
-            if (!doc.exists) {
-                await userRef.set({
-                    phoneNumber: user.phoneNumber,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    username: Player, // Corrected this line
-                    wallet: 0
-                });
-            }
-        }
-    </script>
+    // Create user profile if not exists
+    async function createUserProfile(user) {
+      const userRef = db.collection('users').doc(user.uid);
+      const docSnap = await userRef.get();
+      if (!docSnap.exists()) {
+        await userRef.set({
+          phoneNumber: user.phoneNumber,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          username: "Player" + user.uid.substring(0, 4),
+          wallet: 0
+        });
+      }
+    }
+  </script>
 </body>
 </html>

@@ -101,7 +101,6 @@
         // Send OTP
         sendOtpBtn.addEventListener('click', () => {
           if (isLocalhost()) {
-            // In dev mode, we simulate success and switch views
             alert("Dev mode: OTP verification is skipped. Enter '123456' to log in.");
             phoneView.classList.add('hidden');
             otpView.classList.remove('hidden');
@@ -130,14 +129,13 @@
         // Verify OTP
         verifyOtpBtn.addEventListener('click', async () => {
           if (isLocalhost()) {
-            // In dev mode, we create a fake user and log in
             if (otpInput.value === '123456') {
                 await createUserProfile({
-                    uid: "devUser911234567890", // Using a consistent dev UID
+                    uid: "devUser911234567890",
                     phoneNumber: "+911234567890"
                 });
                 alert("Dev mode: Logged in successfully!");
-                window.location.href = 'home.html';
+                window.location.href = './home.html';
             } else {
                 alert("Incorrect OTP for dev mode. Please use 123456.");
             }
@@ -150,7 +148,7 @@
               const user = result.user;
               await createUserProfile(user);
               alert("Success! You are now logged in.");
-              window.location.href = 'home.html';
+              window.location.href = './home.html';
             })
             .catch((error) => {
               console.error("Error verifying OTP:", error);
@@ -162,7 +160,7 @@
         async function createUserProfile(user) {
           const userRef = db.collection('users').doc(user.uid);
           const docSnap = await userRef.get();
-          if (!docSnap.exists) { // CORRECTED LINE: Removed parentheses
+          if (!docSnap.exists) {
             await userRef.set({
               phoneNumber: user.phoneNumber,
               createdAt: firebase.firestore.FieldValue.serverTimestamp(),

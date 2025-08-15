@@ -27,7 +27,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            position: relative;
+            position: relative; /* Needed for modal positioning */
         }
         .modal-overlay {
             position: absolute;
@@ -40,15 +40,6 @@
             align-items: center;
             justify-content: center;
             z-index: 50;
-        }
-        /* Hide number input arrows */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-          -webkit-appearance: none; 
-          margin: 0; 
-        }
-        input[type=number] {
-          -moz-appearance: textfield;
         }
     </style>
 </head>
@@ -92,9 +83,9 @@
         <div id="purchase-modal" class="modal-overlay hidden">
             <div class="bg-secondary-dark w-11/12 max-w-sm p-6 rounded-2xl shadow-lg border border-gray-700 text-center">
                 <h2 class="text-gold font-bold text-2xl mb-6">Buy Tickets</h2>
-                <div class="flex items-center justify-center space-x-4 mb-6">
+                <div class="flex items-center justify-center space-x-6 mb-6">
                     <button id="decrease-btn" class="bg-gray-700 rounded-full w-12 h-12 text-3xl font-bold">-</button>
-                    <input type="number" id="ticket-count-input" value="1" min="1" max="100" class="bg-secondary-dark text-white-full text-4xl font-bold w-24 text-center focus:outline-none">
+                    <span id="ticket-count" class="text-white-full text-4xl font-bold">1</span>
                     <button id="increase-btn" class="bg-gray-700 rounded-full w-12 h-12 text-3xl font-bold">+</button>
                 </div>
                 <p class="text-light text-lg mb-6">Total Price: <span id="total-price" class="font-bold text-white-full">?10</span></p>
@@ -129,48 +120,41 @@
         const purchaseModal = document.getElementById('purchase-modal');
         const decreaseBtn = document.getElementById('decrease-btn');
         const increaseBtn = document.getElementById('increase-btn');
-        const ticketCountInput = document.getElementById('ticket-count-input');
+        const ticketCountSpan = document.getElementById('ticket-count');
         const totalPriceSpan = document.getElementById('total-price');
         const confirmPurchaseBtn = document.getElementById('confirm-purchase-btn');
         const cancelPurchaseBtn = document.getElementById('cancel-purchase-btn');
 
+        let currentTicketCount = 1;
         const TICKET_PRICE = 10;
         let currentUser = null;
         let currentUserData = null;
 
         // --- Purchase Modal Logic ---
         function updatePurchaseUI() {
-            let count = parseInt(ticketCountInput.value);
-            if (isNaN(count) || count < 1) count = 1;
-            if (count > 100) count = 100;
-            ticketCountInput.value = count;
-            totalPriceSpan.innerText = '?' + (count * TICKET_PRICE);
+            ticketCountSpan.innerText = currentTicketCount;
+            totalPriceSpan.innerText = '?' + (currentTicketCount * TICKET_PRICE);
         }
 
         buyTicketsBtn.addEventListener('click', () => purchaseModal.classList.remove('hidden'));
         cancelPurchaseBtn.addEventListener('click', () => purchaseModal.classList.add('hidden'));
 
         increaseBtn.addEventListener('click', () => {
-            let count = parseInt(ticketCountInput.value);
-            if (count < 100) {
-                ticketCountInput.value = count + 1;
+            if (currentTicketCount < 100) {
+                currentTicketCount++;
                 updatePurchaseUI();
             }
         });
 
         decreaseBtn.addEventListener('click', () => {
-            let count = parseInt(ticketCountInput.value);
-            if (count > 1) {
-                ticketCountInput.value = count - 1;
+            if (currentTicketCount > 1) {
+                currentTicketCount--;
                 updatePurchaseUI();
             }
         });
 
-        ticketCountInput.addEventListener('input', updatePurchaseUI);
-
         confirmPurchaseBtn.addEventListener('click', async () => {
-            const ticketCount = parseInt(ticketCountInput.value);
-            const totalCost = ticketCount * TICKET_PRICE;
+            const totalCost = currentTicketCount * TICKET_PRICE;
             if (currentUserData && currentUserData.wallet >= totalCost) {
                 const newBalance = currentUserData.wallet - totalCost;
                 const userRef = db.collection('users').doc(currentUser.uid);
@@ -178,7 +162,8 @@
                 try {
                     await userRef.update({ wallet: newBalance });
                     alert(Purchase successful!  tickets bought.);
-                    window.location.href = './game.html';
+                    const gameUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1) + 'game.html';
+                    window.location.href = gameUrl;
                 } catch (error) {
                     console.error("Error updating wallet: ", error);
                     alert("Purchase failed. Please try again.");
@@ -204,31 +189,29 @@
             document.getElementById('jaldi5-prize').innerText = '?' + (totalPrizePool * prizeDistribution.jaldi5).toLocaleString();
         }
 
-        // --- CORRECTED INITIALIZATION ---
-        function initializeApp() {
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    currentUser = user;
-                    updatePrizePool();
+        // --- User Auth and Wallet Listener ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                loadingView.classList.add('hidden');
+                appView.classList.remove('hidden');
 
-                    const userRef = db.collection('users').doc(user.uid);
-                    userRef.onSnapshot(doc => {
-                        if (doc.exists) {
-                            currentUserData = doc.data();
-                            usernameDisplay.innerText = currentUserData.username;
-                            walletBalance.innerText = '?' + currentUserData.wallet;
-                            
-                            loadingView.classList.add('hidden');
-                            appView.classList.remove('hidden');
-                        }
-                    });
-                } else {
-                    window.location.href = './login.html';
-                }
-            });
-        }
+                const userRef = db.collection('users').doc(user.uid);
+                userRef.onSnapshot(doc => {
+                    if (doc.exists) {
+                        currentUserData = doc.data();
+                        usernameDisplay.innerText = currentUserData.username;
+                        walletBalance.innerText = '?' + currentUserData.wallet;
+                    }
+                });
+            } else {
+                const loginUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1) + 'login.html';
+                window.location.href = loginUrl;
+            }
+        });
 
-        initializeApp();
+        // Run on page load
+        window.onload = updatePrizePool;
     </script>
 </body>
 </html>

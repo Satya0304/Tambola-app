@@ -147,8 +147,7 @@
             .then(async (result) => {
               const user = result.user;
               await createUserProfile(user);
-              alert("Success! You are now logged in.");
-              window.location.href = './home.html';
+              // Redirect is now handled inside createUserProfile
             })
             .catch((error) => {
               console.error("Error verifying OTP:", error);
@@ -158,16 +157,19 @@
 
         // Create user profile if not exists
         async function createUserProfile(user) {
-          const userRef = db.collection('users').doc(user.uid);
-          const docSnap = await userRef.get();
-          if (!docSnap.exists) {
-            await userRef.set({
-              phoneNumber: user.phoneNumber,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-              username: "Player" + user.uid.substring(0, 4),
-              wallet: 0
-            });
-          }
+            const userRef = db.collection('users').doc(user.uid);
+            const docSnap = await userRef.get();
+            if (!docSnap.exists) {
+                await userRef.set({
+                    phoneNumber: user.phoneNumber,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    username: "Player" + user.uid.substring(0, 4),
+                    wallet: 0
+                });
+            }
+            // This now runs regardless of new or existing user
+            alert("Success! You are now logged in.");
+            window.location.href = './home.html';
         }
     </script>
 </body>

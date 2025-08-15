@@ -27,7 +27,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            position: relative;
+            position: relative; /* Needed for modal positioning */
         }
         .modal-overlay {
             position: absolute;
@@ -162,7 +162,7 @@
                 try {
                     await userRef.update({ wallet: newBalance });
                     alert(Purchase successful!  tickets bought.);
-                    window.location.href = './game.html';
+                    window.location.href = './game.html'; // CORRECTED PATH
                 } catch (error) {
                     console.error("Error updating wallet: ", error);
                     alert("Purchase failed. Please try again.");
@@ -188,31 +188,28 @@
             document.getElementById('jaldi5-prize').innerText = '?' + (totalPrizePool * prizeDistribution.jaldi5).toLocaleString();
         }
 
-        // --- FINAL, CORRECTED INITIALIZATION ---
-        window.onload = function() {
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    currentUser = user;
-                    
-                    // Show the app view as soon as we know a user is logged in
-                    loadingView.classList.add('hidden');
-                    appView.classList.remove('hidden');
-                    
-                    updatePrizePool(); // Now we call this
+        // --- User Auth and Wallet Listener ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                loadingView.classList.add('hidden');
+                appView.classList.remove('hidden');
 
-                    const userRef = db.collection('users').doc(user.uid);
-                    userRef.onSnapshot(doc => {
-                        if (doc.exists) {
-                            currentUserData = doc.data();
-                            usernameDisplay.innerText = currentUserData.username;
-                            walletBalance.innerText = '?' + currentUserData.wallet;
-                        }
-                    });
-                } else {
-                    window.location.href = './login.html';
-                }
-            });
-        };
+                const userRef = db.collection('users').doc(user.uid);
+                userRef.onSnapshot(doc => {
+                    if (doc.exists) {
+                        currentUserData = doc.data();
+                        usernameDisplay.innerText = currentUserData.username;
+                        walletBalance.innerText = '?' + currentUserData.wallet;
+                    }
+                });
+            } else {
+                window.location.href = './login.html'; // CORRECTED PATH
+            }
+        });
+
+        // Run on page load
+        window.onload = updatePrizePool;
     </script>
 </body>
 </html>

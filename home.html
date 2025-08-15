@@ -193,7 +193,7 @@
             auth.onAuthStateChanged(user => {
                 if (user) {
                     currentUser = user;
-                    updatePrizePool();
+                    updatePrizePool(); // Call this after user is confirmed
 
                     const userRef = db.collection('users').doc(user.uid);
                     userRef.onSnapshot(doc => {
@@ -202,6 +202,7 @@
                             usernameDisplay.innerText = currentUserData.username;
                             walletBalance.innerText = '?' + currentUserData.wallet;
                             
+                            // Only show the app after we have the user data
                             loadingView.classList.add('hidden');
                             appView.classList.remove('hidden');
                         }
@@ -212,6 +213,7 @@
             });
         }
 
+        // Run the initialization function when the page loads
         initializeApp();
     </script>
 </body>

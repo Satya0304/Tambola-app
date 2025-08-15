@@ -162,7 +162,7 @@
         async function createUserProfile(user) {
           const userRef = db.collection('users').doc(user.uid);
           const docSnap = await userRef.get();
-          if (!docSnap.exists()) {
+          if (!docSnap.exists) { // CORRECTED LINE: Removed parentheses
             await userRef.set({
               phoneNumber: user.phoneNumber,
               createdAt: firebase.firestore.FieldValue.serverTimestamp(),

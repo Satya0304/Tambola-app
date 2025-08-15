@@ -162,8 +162,8 @@
                 try {
                     await userRef.update({ wallet: newBalance });
                     alert(Purchase successful!  tickets bought.);
-                    // In a real app, we would also save the purchased tickets to the database here.
-                    window.location.href = 'game.html';
+                    const gameUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1) + 'game.html';
+                    window.location.href = gameUrl;
                 } catch (error) {
                     console.error("Error updating wallet: ", error);
                     alert("Purchase failed. Please try again.");
@@ -205,7 +205,8 @@
                     }
                 });
             } else {
-                window.location.href = 'login.html';
+                const loginUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1) + 'login.html';
+                window.location.href = loginUrl;
             }
         });
 

@@ -68,18 +68,37 @@ body { font-family: "Poppins", sans-serif; }
 </div>
 </footer>
 
+<!-- Ticket Purchase Modal -->
 <div id="purchase-modal" class="modal-overlay hidden">
-<div class="bg-secondary-dark w-11/12 max-w-sm p-6 rounded-2xl shadow-lg border border-gray-700 text-center">
+  <div class="bg-secondary-dark w-11/12 max-w-sm p-6 rounded-2xl shadow-lg border border-gray-700 text-center">
     <h2 class="text-gold font-bold text-2xl mb-6">Buy Tickets</h2>
-    <div class="flex items-center justify-center space-x-6 mb-6">
-        <button id="decrease-btn" class="bg-gray-700 rounded-full w-12 h-12 text-3xl font-bold">-</button>
-        <span id="ticket-count" class="text-white-full text-4xl font-bold">1</span>
-        <button id="increase-btn" class="bg-gray-700 rounded-full w-12 h-12 text-3xl font-bold">+</button>
+
+    <!-- Quick select buttons -->
+    <div class="flex flex-wrap justify-center gap-2 mb-4">
+      <button class="quick-ticket-btn bg-gray-700 px-3 py-1 rounded-lg">10</button>
+      <button class="quick-ticket-btn bg-gray-700 px-3 py-1 rounded-lg">20</button>
+      <button class="quick-ticket-btn bg-gray-700 px-3 py-1 rounded-lg">30</button>
+      <button class="quick-ticket-btn bg-gray-700 px-3 py-1 rounded-lg">40</button>
+      <button class="quick-ticket-btn bg-gray-700 px-3 py-1 rounded-lg">50</button>
+      <button class="quick-ticket-btn bg-gray-700 px-3 py-1 rounded-lg">60</button>
+      <button class="quick-ticket-btn bg-gray-700 px-3 py-1 rounded-lg">70</button>
+      <button class="quick-ticket-btn bg-gray-700 px-3 py-1 rounded-lg">80</button>
+      <button class="quick-ticket-btn bg-gray-700 px-3 py-1 rounded-lg">90</button>
+      <button class="quick-ticket-btn bg-gray-700 px-3 py-1 rounded-lg">100</button>
     </div>
+
+    <!-- Manual input -->
+    <div class="mb-4">
+      <label for="manual-ticket-input" class="text-light">Or enter ticket count:</label>
+      <input id="manual-ticket-input" type="number" min="1" max="100" value="1"
+             class="w-1/2 text-center rounded-lg py-1 text-black" />
+    </div>
+
     <p class="text-light text-lg mb-6">Total Price: <span id="total-price" class="font-bold text-white-full">₹10</span></p>
+
     <button id="confirm-purchase-btn" class="w-full bg-accent-gold text-black font-bold py-3 rounded-lg text-lg mb-2">Confirm & Buy</button>
     <button id="cancel-purchase-btn" class="w-full text-light py-2">Cancel</button>
-</div>
+  </div>
 </div>
 
 <script>
@@ -107,35 +126,52 @@ const ticketCountSpan = document.getElementById('ticket-count');
 const totalPriceSpan = document.getElementById('total-price');
 const confirmPurchaseBtn = document.getElementById('confirm-purchase-btn');
 const cancelPurchaseBtn = document.getElementById('cancel-purchase-btn');
+const manualInput = document.getElementById('manual-ticket-input');
+const quickBtns = document.querySelectorAll('.quick-ticket-btn');
 
 let currentTicketCount = 1;
 const TICKET_PRICE = 10;
 let currentUserData = null;
 
-function updatePurchaseUI() {
+function updateTicketUI(count) {
+    currentTicketCount = Math.min(Math.max(count, 1), 100);
     ticketCountSpan.innerText = currentTicketCount;
     totalPriceSpan.innerText = '₹' + (currentTicketCount * TICKET_PRICE);
+    manualInput.value = currentTicketCount;
 }
+
+// Quick select buttons
+quickBtns.forEach(btn => btn.addEventListener('click', ()=> updateTicketUI(parseInt(btn.innerText))));
+
+// Manual input
+manualInput.addEventListener('input', ()=> updateTicketUI(parseInt(manualInput.value)||1));
+
+// Buy modal open/close
 buyTicketsBtn.addEventListener('click', ()=> purchaseModal.classList.remove('hidden'));
 cancelPurchaseBtn.addEventListener('click', ()=> purchaseModal.classList.add('hidden'));
-increaseBtn.addEventListener('click', ()=> { if(currentTicketCount<100){currentTicketCount++; updatePurchaseUI();}});
-decreaseBtn.addEventListener('click', ()=> { if(currentTicketCount>1){currentTicketCount--; updatePurchaseUI();}});
+
+// Existing increase/decrease
+increaseBtn.addEventListener('click', ()=> updateTicketUI(currentTicketCount+1));
+decreaseBtn.addEventListener('click', ()=> updateTicketUI(currentTicketCount-1));
+
+// Confirm purchase
 confirmPurchaseBtn.addEventListener('click', async ()=>{
     const user = firebase.auth().currentUser;
     if(!user){alert('Please login first.'); return;}
-    const totalCost = currentTicketCount * TICKET_PRICE;
+    const totalCost = currentTicketCount*TICKET_PRICE;
     const userRef = db.collection('users').doc(user.uid);
     const doc = await userRef.get();
     if(doc.exists){
         currentUserData = doc.data();
-        if(currentUserData.wallet >= totalCost){
+        if(currentUserData.wallet>=totalCost){
             await userRef.update({wallet: currentUserData.wallet - totalCost});
             alert(`Purchase successful! ${currentTicketCount} tickets bought.`);
             window.location.href='./game.html';
-        }else{alert('Insufficient balance.');}
+        } else { alert('Insufficient balance.'); }
     }
 });
 
+// Prize pool
 function updatePrizePool(){
     const ticketsSold=1250;
     const prizeDistribution={fullHouse:0.5,topLine:0.15,middleLine:0.15,bottomLine:0.15,jaldi5:0.05};
@@ -148,9 +184,10 @@ function updatePrizePool(){
     document.getElementById('jaldi5-prize').innerText='₹'+(totalPrizePool*prizeDistribution.jaldi5).toLocaleString();
 }
 
+// Firebase auth
 window.onload = ()=>{
     try {
-        if (!firebase || !firebase.auth) throw new Error("Firebase not loaded");
+        if(!firebase||!firebase.auth) throw new Error("Firebase not loaded");
         auth.onAuthStateChanged(user=>{
             loadingView.classList.add('hidden');
             appView.classList.remove('hidden');

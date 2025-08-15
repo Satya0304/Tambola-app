@@ -193,7 +193,7 @@
             auth.onAuthStateChanged(user => {
                 if (user) {
                     currentUser = user;
-                    updatePrizePool(); // Call this after user is confirmed
+                    updatePrizePool();
 
                     const userRef = db.collection('users').doc(user.uid);
                     userRef.onSnapshot(doc => {

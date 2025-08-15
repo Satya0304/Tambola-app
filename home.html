@@ -27,6 +27,19 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            position: relative; /* Needed for modal positioning */
+        }
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
         }
     </style>
 </head>
@@ -62,9 +75,24 @@
         <footer class="p-4 bg-secondary-dark/80 backdrop-blur-sm border-t border-gray-700">
             <div class="flex items-center justify-center space-x-4">
                 <button class="bg-gray-700 text-light font-bold py-3 px-6 rounded-xl shadow-md">Private Room</button>
-                <button onclick="window.location.href='game.html'" class="bg-accent-gold text-black font-bold py-3 px-8 rounded-xl shadow-lg flex-grow">BUY TICKETS</button>
+                <button id="buy-tickets-btn" class="bg-accent-gold text-black font-bold py-3 px-8 rounded-xl shadow-lg flex-grow">BUY TICKETS</button>
             </div>
         </footer>
+
+        <!-- Ticket Purchase Modal -->
+        <div id="purchase-modal" class="modal-overlay hidden">
+            <div class="bg-secondary-dark w-11/12 max-w-sm p-6 rounded-2xl shadow-lg border border-gray-700 text-center">
+                <h2 class="text-gold font-bold text-2xl mb-6">Buy Tickets</h2>
+                <div class="flex items-center justify-center space-x-6 mb-6">
+                    <button id="decrease-btn" class="bg-gray-700 rounded-full w-12 h-12 text-3xl font-bold">-</button>
+                    <span id="ticket-count" class="text-white-full text-4xl font-bold">1</span>
+                    <button id="increase-btn" class="bg-gray-700 rounded-full w-12 h-12 text-3xl font-bold">+</button>
+                </div>
+                <p class="text-light text-lg mb-6">Total Price: <span id="total-price" class="font-bold text-white-full">?10</span></p>
+                <button id="confirm-purchase-btn" class="w-full bg-accent-gold text-black font-bold py-3 rounded-lg text-lg mb-2">Confirm & Buy</button>
+                <button id="cancel-purchase-btn" class="w-full text-light py-2">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -88,15 +116,71 @@
         const appView = document.getElementById('app-view');
         const usernameDisplay = document.getElementById('username-display');
         const walletBalance = document.getElementById('wallet-balance');
+        const buyTicketsBtn = document.getElementById('buy-tickets-btn');
+        const purchaseModal = document.getElementById('purchase-modal');
+        const decreaseBtn = document.getElementById('decrease-btn');
+        const increaseBtn = document.getElementById('increase-btn');
+        const ticketCountSpan = document.getElementById('ticket-count');
+        const totalPriceSpan = document.getElementById('total-price');
+        const confirmPurchaseBtn = document.getElementById('confirm-purchase-btn');
+        const cancelPurchaseBtn = document.getElementById('cancel-purchase-btn');
+
+        let currentTicketCount = 1;
+        const TICKET_PRICE = 10;
+        let currentUser = null;
+        let currentUserData = null;
+
+        // --- Purchase Modal Logic ---
+        function updatePurchaseUI() {
+            ticketCountSpan.innerText = currentTicketCount;
+            totalPriceSpan.innerText = '?' + (currentTicketCount * TICKET_PRICE);
+        }
+
+        buyTicketsBtn.addEventListener('click', () => purchaseModal.classList.remove('hidden'));
+        cancelPurchaseBtn.addEventListener('click', () => purchaseModal.classList.add('hidden'));
+
+        increaseBtn.addEventListener('click', () => {
+            if (currentTicketCount < 100) {
+                currentTicketCount++;
+                updatePurchaseUI();
+            }
+        });
+
+        decreaseBtn.addEventListener('click', () => {
+            if (currentTicketCount > 1) {
+                currentTicketCount--;
+                updatePurchaseUI();
+            }
+        });
+
+        confirmPurchaseBtn.addEventListener('click', async () => {
+            const totalCost = currentTicketCount * TICKET_PRICE;
+            if (currentUserData && currentUserData.wallet >= totalCost) {
+                const newBalance = currentUserData.wallet - totalCost;
+                const userRef = db.collection('users').doc(currentUser.uid);
+                
+                try {
+                    await userRef.update({ wallet: newBalance });
+                    alert(Purchase successful!  tickets bought.);
+                    // In a real app, we would also save the purchased tickets to the database here.
+                    window.location.href = 'game.html';
+                } catch (error) {
+                    console.error("Error updating wallet: ", error);
+                    alert("Purchase failed. Please try again.");
+                }
+
+            } else {
+                alert("Insufficient balance to buy tickets.");
+            }
+        });
         
-        // Prize Pool Logic
+        // --- Prize Pool Logic ---
         function updatePrizePool() {
-            const ticketPrice = 10;
             const ticketsSold = 1250; 
             const prizeDistribution = {
                 fullHouse: 0.50, topLine: 0.15, middleLine: 0.15, bottomLine: 0.15, jaldi5: 0.05
             };
-            const totalCollection = ticketsSold * ticketPrice;
+            const totalCollection = ticketsSold * TICKET_PRICE;
             const totalPrizePool = totalCollection * 0.80;
             document.getElementById('full-house-prize').innerText = '?' + (totalPrizePool * prizeDistribution.fullHouse).toLocaleString();
             document.getElementById('top-line-prize').innerText = '?' + (totalPrizePool * prizeDistribution.topLine).toLocaleString();
@@ -105,24 +189,22 @@
             document.getElementById('jaldi5-prize').innerText = '?' + (totalPrizePool * prizeDistribution.jaldi5).toLocaleString();
         }
 
-        // User Auth and Wallet Listener
+        // --- User Auth and Wallet Listener ---
         auth.onAuthStateChanged(user => {
             if (user) {
-                // User is signed in.
+                currentUser = user;
                 loadingView.classList.add('hidden');
                 appView.classList.remove('hidden');
 
                 const userRef = db.collection('users').doc(user.uid);
                 userRef.onSnapshot(doc => {
                     if (doc.exists) {
-                        const userData = doc.data();
-                        usernameDisplay.innerText = userData.username;
-                        walletBalance.innerText = '?' + userData.wallet;
+                        currentUserData = doc.data();
+                        usernameDisplay.innerText = currentUserData.username;
+                        walletBalance.innerText = '?' + currentUserData.wallet;
                     }
                 });
             } else {
-                // No user is signed in.
-                console.log("No user logged in, redirecting...");
                 window.location.href = 'login.html';
             }
         });

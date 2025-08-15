@@ -10,7 +10,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-body { font-family: 'Poppins', sans-serif; }
+body { font-family: "Poppins", sans-serif; }
 .bg-primary-dark { background-color: #121212; }
 .bg-secondary-dark { background-color: #1E1E1E; }
 .bg-accent-gold { background-color: #F9A825; }
@@ -112,7 +112,6 @@ let currentTicketCount = 1;
 const TICKET_PRICE = 10;
 let currentUserData = null;
 
-// Purchase Modal
 function updatePurchaseUI() {
     ticketCountSpan.innerText = currentTicketCount;
     totalPriceSpan.innerText = '₹' + (currentTicketCount * TICKET_PRICE);
@@ -131,13 +130,12 @@ confirmPurchaseBtn.addEventListener('click', async ()=>{
         currentUserData = doc.data();
         if(currentUserData.wallet >= totalCost){
             await userRef.update({wallet: currentUserData.wallet - totalCost});
-            alert(\Purchase successful! \ tickets bought.\);
+            alert(`Purchase successful! ${currentTicketCount} tickets bought.`);
             window.location.href='./game.html';
         }else{alert('Insufficient balance.');}
     }
 });
 
-// Prize Pool
 function updatePrizePool(){
     const ticketsSold=1250;
     const prizeDistribution={fullHouse:0.5,topLine:0.15,middleLine:0.15,bottomLine:0.15,jaldi5:0.05};
@@ -150,26 +148,30 @@ function updatePrizePool(){
     document.getElementById('jaldi5-prize').innerText='₹'+(totalPrizePool*prizeDistribution.jaldi5).toLocaleString();
 }
 
-// Auth & Page Load
 window.onload = ()=>{
-    auth.onAuthStateChanged(user=>{
-        if(user){
-            console.log('User logged in:', user);
+    try {
+        if (!firebase || !firebase.auth) throw new Error("Firebase not loaded");
+        auth.onAuthStateChanged(user=>{
             loadingView.classList.add('hidden');
             appView.classList.remove('hidden');
-            updatePrizePool();
-            db.collection('users').doc(user.uid).onSnapshot(doc=>{
-                if(doc.exists){
-                    currentUserData=doc.data();
-                    usernameDisplay.innerText=currentUserData.username||'@Player';
-                    walletBalance.innerText='₹'+(currentUserData.wallet||0);
-                }
-            });
-        } else {
-            console.log('No user logged in. Redirecting to login...');
-            window.location.href='./login.html';
-        }
-    });
+            if(user){
+                db.collection('users').doc(user.uid).onSnapshot(doc=>{
+                    if(doc.exists){
+                        currentUserData=doc.data();
+                        usernameDisplay.innerText=currentUserData.username||'@Player';
+                        walletBalance.innerText='₹'+(currentUserData.wallet||0);
+                    }
+                });
+                updatePrizePool();
+            } else {
+                console.warn("No user logged in. Page displayed for testing.");
+            }
+        });
+    } catch(err){
+        console.error("Firebase error:", err);
+        loadingView.classList.add('hidden');
+        appView.classList.remove('hidden');
+    }
 };
 </script>
 </body>

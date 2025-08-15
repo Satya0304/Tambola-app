@@ -31,7 +31,9 @@
     </style>
 </head>
 <body class="bg-gray-800 flex items-center justify-center h-screen">
-    <div class="mobile-screen bg-primary-dark">
+    <div id="loading-view" class="text-white text-2xl">Loading...</div>
+
+    <div id="app-view" class="mobile-screen bg-primary-dark hidden">
         <header class="bg-secondary-dark text-white-full p-4 flex justify-between items-center shadow-lg">
             <div class="flex items-center space-x-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gold" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
@@ -82,6 +84,8 @@
         const db = firebase.firestore();
 
         // UI Elements
+        const loadingView = document.getElementById('loading-view');
+        const appView = document.getElementById('app-view');
         const usernameDisplay = document.getElementById('username-display');
         const walletBalance = document.getElementById('wallet-balance');
         
@@ -104,6 +108,10 @@
         // User Auth and Wallet Listener
         auth.onAuthStateChanged(user => {
             if (user) {
+                // User is signed in.
+                loadingView.classList.add('hidden');
+                appView.classList.remove('hidden');
+
                 const userRef = db.collection('users').doc(user.uid);
                 userRef.onSnapshot(doc => {
                     if (doc.exists) {
@@ -113,7 +121,7 @@
                     }
                 });
             } else {
-                // Not logged in, redirect to login page
+                // No user is signed in.
                 console.log("No user logged in, redirecting...");
                 window.location.href = 'login.html';
             }

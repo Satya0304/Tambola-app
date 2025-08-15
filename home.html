@@ -162,7 +162,8 @@
                 try {
                     await userRef.update({ wallet: newBalance });
                     alert(Purchase successful!  tickets bought.);
-                    window.location.href = './game.html';
+                    const gameUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1) + 'game.html';
+                    window.location.href = gameUrl;
                 } catch (error) {
                     console.error("Error updating wallet: ", error);
                     alert("Purchase failed. Please try again.");
@@ -202,6 +203,7 @@
                             usernameDisplay.innerText = currentUserData.username;
                             walletBalance.innerText = '?' + currentUserData.wallet;
                             
+                            // Only show the app after we have the user data
                             loadingView.classList.add('hidden');
                             appView.classList.remove('hidden');
                         }
@@ -212,6 +214,7 @@
             });
         }
 
+        // Run the initialization function when the page loads
         initializeApp();
     </script>
 </body>

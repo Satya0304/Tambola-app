@@ -27,7 +27,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            position: relative; /* Needed for modal positioning */
+            position: relative;
         }
         .modal-overlay {
             position: absolute;
@@ -189,29 +189,34 @@
             document.getElementById('jaldi5-prize').innerText = '?' + (totalPrizePool * prizeDistribution.jaldi5).toLocaleString();
         }
 
-        // --- User Auth and Wallet Listener ---
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                currentUser = user;
-                loadingView.classList.add('hidden');
-                appView.classList.remove('hidden');
+        // --- CORRECTED INITIALIZATION ---
+        function initializeApp() {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    
+                    updatePrizePool(); // Now we call this after we know the user is logged in
 
-                const userRef = db.collection('users').doc(user.uid);
-                userRef.onSnapshot(doc => {
-                    if (doc.exists) {
-                        currentUserData = doc.data();
-                        usernameDisplay.innerText = currentUserData.username;
-                        walletBalance.innerText = '?' + currentUserData.wallet;
-                    }
-                });
-            } else {
-                const loginUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1) + 'login.html';
-                window.location.href = loginUrl;
-            }
-        });
+                    const userRef = db.collection('users').doc(user.uid);
+                    userRef.onSnapshot(doc => {
+                        if (doc.exists) {
+                            currentUserData = doc.data();
+                            usernameDisplay.innerText = currentUserData.username;
+                            walletBalance.innerText = '?' + currentUserData.wallet;
+                            
+                            // Only show the app after we have the user data
+                            loadingView.classList.add('hidden');
+                            appView.classList.remove('hidden');
+                        }
+                    });
+                } else {
+                    window.location.href = './login.html';
+                }
+            });
+        }
 
-        // Run on page load
-        window.onload = updatePrizePool;
+        // Run the initialization function when the page loads
+        initializeApp();
     </script>
 </body>
 </html>

@@ -189,28 +189,30 @@
         }
 
         // --- FINAL, CORRECTED INITIALIZATION ---
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                currentUser = user;
-                
-                // Show the app view as soon as we know a user is logged in
-                loadingView.classList.add('hidden');
-                appView.classList.remove('hidden');
-                
-                updatePrizePool(); // Now we call this
+        window.onload = function() {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    
+                    // Show the app view as soon as we know a user is logged in
+                    loadingView.classList.add('hidden');
+                    appView.classList.remove('hidden');
+                    
+                    updatePrizePool(); // Now we call this
 
-                const userRef = db.collection('users').doc(user.uid);
-                userRef.onSnapshot(doc => {
-                    if (doc.exists) {
-                        currentUserData = doc.data();
-                        usernameDisplay.innerText = currentUserData.username;
-                        walletBalance.innerText = '?' + currentUserData.wallet;
-                    }
-                });
-            } else {
-                window.location.href = './login.html';
-            }
-        });
+                    const userRef = db.collection('users').doc(user.uid);
+                    userRef.onSnapshot(doc => {
+                        if (doc.exists) {
+                            currentUserData = doc.data();
+                            usernameDisplay.innerText = currentUserData.username;
+                            walletBalance.innerText = '?' + currentUserData.wallet;
+                        }
+                    });
+                } else {
+                    window.location.href = './login.html';
+                }
+            });
+        };
     </script>
 </body>
 </html>
